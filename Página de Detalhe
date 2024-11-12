@@ -1,0 +1,906 @@
+<script>
+    var Model = function () {
+        /*PARC*/
+
+        /*PARC*/
+
+        if (this.parcData.vid.length > 0) {
+            this.vid =
+                "https://www.youtube.com/embed/" +
+                this.parcData.vid +
+                "?playlist=" +
+                this.parcData.vid +
+                "&amp;autoplay=1&amp;controls=1&amp;loop=1&amp;mute=1&amp;rel=0&amp;showinfo=0&amp;color=white";
+        } else {
+            this.vid = "";
+        }
+
+        this.gmaps =
+            "https://maps.google.com/maps?q=" +
+            this.parcData.morada +
+            ", " +
+            this.parcData.local +
+            ", " +
+            this.parcData.codpost +
+            "&t=&z=13&ie=UTF8&iwloc=&output=embed";
+
+        // this.demo =
+        //     "https://phccs.net/pedido-demonstracao/?dirparc=" +
+        //     this.parcData.idParc +
+        //     "&nomeparc=" +
+        //     this.parcData.nome;
+
+        this.demo = "https://phcsoftware.com/pt/phc-cs/phc-cs-planos?dirparc=" +
+                    this.parcData.idParc +
+                         "&nomeparc=" +
+                    this.parcData.nome;
+
+        this.inquiryP =
+            "https://phcgo.net/pedir-informacao/?dirparc=" +
+            this.parcData.idParc +
+            "&nomeparc=" +
+            this.parcData.nome +
+            "";
+
+        this.isBizDev = function (tp) {
+            switch (tp) {
+                case "dev":
+                    switch (this.parcData.tpparc.toLowerCase()) {
+                        case "bd":
+                            return true;
+                            break;
+                        case "b":
+                            return false;
+                            break;
+                        case "d":
+                            return true;
+                            break;
+                        default:
+                            return false;
+                    }
+
+                    break;
+                case "biz":
+                    switch (this.parcData.tpparc.toLowerCase()) {
+                        case "bd":
+                            return true;
+                            break;
+                        case "b":
+                            return true;
+                            break;
+                        case "d":
+                            return false;
+                            break;
+                        default:
+                            return false;
+                    }
+                    break;
+                default:
+                    return false;
+            }
+        };
+
+        this.share = function () {
+            let shareData = {
+                title: "PHC CS - " + this.parcData.nome,
+                text: "Diretório de Parceiros PHC CS",
+                url: window.location.href,
+            };
+            try {
+                navigator.share(shareData);
+            } catch (err) {
+                console.log("error share");
+            }
+        };
+
+        this.urlValid = function (url) {
+            if (url.includes("http")) {
+                return url;
+            } else {
+                return "//" + url;
+            }
+        };
+
+        this.floors = function (num) {
+            let resultStep;
+            switch (true) {
+                case num <= 10:
+                    resultStep = "1 - 10";
+                    break;
+                case num > 10 && num <= 30:
+                    resultStep = "11 - 30";
+                    break;
+                case num > 30 && num <= 100:
+                    resultStep = "31 - 100";
+                    break;
+                case num > 100:
+                    resultStep = "101 +";
+                    break;
+            }
+
+            return resultStep;
+            /*  if (num <= 10) {
+                       return "1 - 10"
+                   } else {
+                       return parseInt(num / 10, 10) * 10 + "+"
+                   } */
+        };
+    };
+
+    $(function () {
+        var styleSheets = document.getElementsByTagName("link");
+
+        for (var i = 0; i < styleSheets.length; i++) {
+            var styleSheet = styleSheets[i];
+            var href = styleSheet.href;
+            if (href && href.includes("cssmk")) {
+                styleSheet.disabled = true;
+            }
+        }
+
+        ko.applyBindings(new Model());
+
+        let container = $("#aspnetForm > div.container");
+        container.after($("#dirResults"));
+        container.after($("#dirOptions"));
+        container.removeClass("container");
+        $("#ctl00_MasterUpdatePanel1").hide();
+        $("#primary-navigation").remove();
+        $("#site-header-wrapper").remove();
+        /*container.addClass("row");
+            container.addClass("contentBanner");*/
+    });
+</script>
+<style type="text/css">
+    /** {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+          }
+          
+          body {
+              font-family: Arial, Helvetica, sans-serif;
+              display: grid;
+              place-items: center;
+              min-height: 100vh;
+          }*/
+
+    footer {
+        display: none;
+    }
+
+    html {
+        font-size: 16px !important;
+    }
+
+    body {
+        font-size: 16px !important;
+        overflow-x: hidden;
+    }
+
+    hr {
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+        margin-right: 2rem;
+        margin-left: 2rem;
+        border: 0;
+        border-top: 1px solid var(--bs-secondary);
+    }
+
+    .hrSolution {
+        margin-right: 20rem;
+        margin-left: 20rem;
+    }
+
+    .hrServ {
+        border-top: 1px solid #ea0029;
+        margin-right: 40%;
+        margin-left: 40%;
+    }
+
+    .rowContent {
+        min-height: 20vh;
+        background-color: rgb(255, 255, 255) !important;
+    }
+
+    .rowContentMeta {
+        min-height: 20vh;
+        background-color: rgb(255, 255, 255) !important;
+    }
+
+    .rowContentalt {
+        min-height: 30vh;
+        background-color: #f0f0f0 !important;
+    }
+
+    .rowContentvid {
+        min-height: 30vh;
+        background-color: #f0f0f0 !important;
+        color: #171717 !important;
+    }
+
+    .rowContentAction {
+        min-height: 30vh;
+        background-color: #ea0029 !important;
+        color: #ffd8dd !important;
+    }
+
+    .rowContentCount {
+        min-height: 20vh;
+        background-color: #f0f0f0 !important;
+        color: #ea0029 !important;
+    }
+
+    .rowContentCount hr {
+        border-top: 1px solid #ea0029;
+    }
+
+    .videowrapper {
+        float: none;
+        clear: both;
+        width: 50%;
+        position: relative;
+        padding-bottom: 27%;
+        padding-top: 25px;
+        height: 0;
+    }
+
+    .videowrapper iframe {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: 100%;
+        height: 100%;
+    }
+
+    @media only screen and (max-width: 576px) {
+        .videowrapper {
+            width: 95%;
+            padding-bottom: 41%;
+            padding-top: 39px;
+        }
+
+        .videowrapper iframe {
+            left: 0%;
+        }
+    }
+
+    .colContent {
+        margin-top: 3rem;
+        margin-bottom: 3rem;
+    }
+
+    .colContentMap {
+        margin-top: 3rem;
+        margin-bottom: 3rem;
+    }
+
+    .chip {
+        font-size: 1rem;
+        padding: 1rem;
+        margin: 1rem;
+        color: #ea0029 !important;
+        white-space: normal !important;
+    }
+
+    .badge {
+        background-color: transparent !important;
+    }
+
+    .breadcrumb {
+        background-color: transparent !important;
+    }
+
+    .bullets {
+        font-size: 1rem;
+        color: #ea0029 !important;
+        padding-left: 0px !important;
+    }
+
+    .header {
+        min-height: 6vh;
+        background-color: rgb(255, 255, 255) !important;
+        margin-top: 1rem;
+    }
+
+    .headerLink {
+        font-size: 18px;
+        color: black;
+        margin-right: 1rem;
+    }
+
+    .shareLink {
+        color: #ea0029 !important;
+        font-size: 18px;
+        cursor: pointer;
+    }
+
+    .footer {
+        min-height: 10vh;
+        background-color: rgb(34, 34, 34) !important;
+        padding-top: 2rem;
+    }
+
+    @media only screen and (max-width: 1070px) {
+        .footer {
+            display: none;
+        }
+    }
+
+    .footerlink {
+        color: black;
+    }
+
+    .footerHdrs {
+        color: #ea0029;
+        margin-bottom: 2rem;
+        text-align: start;
+    }
+
+    .footerText {
+        color: white;
+    }
+
+    @media only screen and (max-width: 768px) {
+        .footerHdrs {
+            margin-bottom: 1rem;
+            margin-top: 2rem;
+        }
+    }
+
+    .footerul {
+        list-style-type: none;
+        text-align: left;
+        padding-inline-start: 0px !important;
+    }
+
+    .footerul li:not(:last-child) {
+        margin-bottom: 5px;
+    }
+
+    ul.ulItems {
+        columns: 2;
+        -webkit-columns: 2;
+        -moz-columns: 2;
+        list-style-type: none;
+        text-align: left;
+        padding-inline-start: 0px !important;
+    }
+
+    .ulSocials {
+        width: 50%;
+    }
+
+    #sgsImg{
+        width: 45px !important;
+    }
+
+    #jumboContainer{
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+    @media only screen and (max-width: 1373px) {
+        .ulSocials {
+            width: 100%;
+        }
+
+        /* .ulDist {
+              columns: 1 !important;
+              -webkit-columns: 1 !important;
+              -moz-columns: 1 !important;
+          } */
+    }
+
+    .bg-light {
+        background-color: #ffd8dd !important;
+        color: #ea0029 !important;
+    }
+
+    .titles {
+        margin-bottom: 2rem !important;
+    }
+
+    .titlesSolution {
+        margin-bottom: 2rem;
+        margin-top: 2rem;
+    }
+
+    .jumbotron {
+        background-color: #e3e3e3;
+    }
+
+    .lead {
+        font-size: 14px !important;
+    }
+
+    .contactos {
+        background-color: #f0f0f0 !important;
+    }
+
+    .whiteText {
+        color: rgb(255, 255, 255);
+    }
+
+    .map-container {
+        overflow: hidden;
+        padding-bottom: 56.25%;
+        position: relative;
+        height: 0;
+    }
+
+    .map-container iframe {
+        left: 3rem;
+        top: 0;
+        height: 100%;
+        width: 85%;
+        position: absolute;
+    }
+
+    .btnParcPrim {
+        border-radius: 10px !important;
+        font-size: 14px !important;
+        padding-left: 2rem;
+        padding-right: 2rem;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        background-color: #ea0029;
+        color: rgb(255, 255, 255);
+        box-shadow: 0 0 11px rgba(33, 33, 33, 0.2);
+        margin-bottom: 1rem;
+        margin-top: 1rem;
+    }
+
+    .btnParcPrim:hover {
+        background-color: #830017 !important;
+        color: rgb(255, 255, 255) !important;
+    }
+
+    .btnParcSec {
+        border-radius: 10px !important;
+        font-size: 14px !important;
+        padding-left: 2rem;
+        padding-right: 2rem;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        color: #ea0029;
+        background-color: rgb(255, 255, 255);
+        box-shadow: 0 0 11px rgba(33, 33, 33, 0.2);
+        margin-bottom: 1rem;
+        margin-top: 1rem;
+    }
+
+    .btnParcSec:hover {
+        background-color: #830017 !important;
+        color: rgb(255, 255, 255) !important;
+    }
+
+    .btnParcHeader {
+        border-radius: 10px !important;
+        font-size: 18px;
+        background-color: #ea0029;
+        color: rgb(255, 255, 255);
+        box-shadow: 0 0 11px rgb(33 33 33 / 20%);
+    }
+
+    .btnParcHeader:hover {
+        background-color: #830017 !important;
+        color: rgb(255, 255, 255) !important;
+    }
+
+    @media only screen and (max-width: 1199px) {
+        .btnParcPrim {
+            width: 100%;
+        }
+
+        .btnParcSec {
+            width: 100%;
+        }
+    }
+
+    @media only screen and (max-width: 576px) {
+        .map-container iframe {
+            left: 0rem;
+            width: 100%;
+        }
+
+        .colContentMap {
+            margin-top: 0rem;
+        }
+    }
+
+    @media only screen and (max-width: 2030px) {
+        .headerLink {
+            font-size: 14px;
+        }
+
+        .btnParcHeader {
+            font-size: 14px;
+        }
+    }
+
+    @media only screen and (max-width: 1000px) {
+        .headerOptions {
+            display: none;
+        }
+    }
+
+    .EspBadgeContainer {
+        display: flex;
+        flex-flow: row wrap;
+        justify-content: center;
+    }
+
+    .EspBadge {
+        max-width: 100px;
+        /* Or whatever */
+        max-height: 100px;
+        /* Or whatever */
+        margin: 0 75px;
+        /* Magic! */
+    }
+
+    .EspBadgeTxt {
+        font-size: 12px;
+    }
+
+    .EspBadgeimg {
+        max-width: 100px;
+        max-height: 100px;
+        /*border-radius: 50%;*/
+    }
+
+    .footerFlex {
+        margin: auto;
+        /* Magic! */
+    }
+
+    .footerFlex img {
+        width: 105px !important;
+        height: auto;
+    }
+</style>
+<div class="dirResults" id="dirResults">
+    <div class="row header justify-content-center">
+        <div class="col-10 col-xl-8 text-center">
+            <div class="row">
+                <div class="col-2 text-start"><a href="https://phcsoftware.com/"><img alt="logotipo da marca PHC CS"
+                            class="attachment-full size-full entered lazyloaded"
+                            data-lazy-src="../imagesmk/logo_caccf234ed88447febee30fb460f6836_1x.png"
+                            data-ll-status="loaded" src="../imagesmk/logo_caccf234ed88447febee30fb460f6836_1x.png"
+                            style="max-width: 40vw" /></a></div>
+
+                <div class="col-4 offset-6 text-center align-self-center"><a class="shareLink"
+                        data-bind="click: share"><i class="fa-solid fa-share"></i> Partilhar</a></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-8 text-center">
+            <nav aria-label="breadcrumb" style="--bs-breadcrumb-divider: '&gt;'; margin-top: 2rem">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a
+                            href="https://phcsoftware.com/pt/phc-cs/diretorio-de-parceiros-phc-cs">Diret&oacute;rio PHC
+                            CS</a></li>
+                    <li aria-current="page" class="breadcrumb-item active" data-bind="text: parcData.nome">&nbsp;</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    <!-- Not available content -->
+
+    <div data-bind="visible: parcData.valid == 0" id="notAvailable" style="min-height: 70vh !important">
+        <div class="row justify-content-center rowContent">
+            <div class="col-8 text-center colContent">
+                <h1 class="titles">Parceiro n&atilde;o dispon&iacute;vel para consulta.</h1>
+
+                <p><span class="text-secondary">A informa&ccedil;&atilde;o de detalhe deste parceiro n&atilde;o
+                        est&aacute; dispon&iacute;vel para consulta.</span></p>
+
+                <p><span class="text-secondary">Consulte o nosso diret&oacute;rio de Parceiros PHC CS para escolher um
+                        novo parceiro!</span></p>
+
+                <div class="row justify-content-center">
+                    <div class="col-12 col-lg-5"><a class="btn btnParcPrim" href="https://phccs.net/partners/"
+                            style="font-size: 16px !important">Diret&oacute;rio PHC CS</a></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Valid Content -->
+
+    <div data-bind="visible: parcData.valid == 1" id="content">
+        <div class="row justify-content-center rowContentMeta">
+            <div class="col-8 text-center">
+                <div class="row justify-content-center">
+                    <div class="col-6 col-md-3 col-lg-2"><img alt="Imagem do logo do Parceiro"
+                            data-bind="attr:{src: parcData.imglogo}" width="100%" /></div>
+
+                    <div class="col-1">&nbsp;</div>
+
+                    <div class="col-12 col-md-6 text-start">
+                        <div style="display: table; height: 100%">
+                            <div style="display: table-cell; vertical-align: middle">
+                                <div>
+                                    <div style="margin-bottom: 1rem"><img
+                                            data-bind="visible: $root.isBizDev(&quot;dev&quot;);"
+                                            src="https://phcgo.net/wp-content/uploads/2020/11/Developer-Partner@2x.png"
+                                            width="39.6" /> <img data-bind="visible: $root.isBizDev(&quot;biz&quot;);"
+                                            src="https://phcgo.net/wp-content/uploads/2020/11/Business-Partner@2x.png"
+                                            width="39.6" /></div>
+
+                                    <p class="text-secondary">Existe desde <span
+                                            data-bind="text: parcData.dborn"></span> | Parceiro desde <span
+                                            data-bind="text: parcData.dparc"></span></p>
+
+                                    <h4 data-bind="text: parcData.nome">&nbsp;</h4>
+
+                                    <p data-bind="text: parcData.slogan">&nbsp;</p>
+                                    <!-- <p><i aria-hidden="true" class="fa fa-map-marker text-secondary"></i> <span class="text-secondary" data-bind="text: parcData.sede"></span></p> -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center rowContent">
+            <div class="col-8 text-center colContent">
+                <div data-bind="visible: parcData.especial.length &gt; 0">
+                    <h1 class="titles">Especializa&ccedil;&otilde;es</h1>
+
+                    <div class="row justify-content-center">
+                        <div class="col-12 text-center colContent EspBadgeContainer"
+                            data-bind="foreach: parcData.especial">
+                            <div class="EspBadge" data-bind="visible: $data.img.length &gt; 0"><img class="EspBadgeimg"
+                                    data-bind="attr: { src: $data.img }" /> <span class="EspBadgeTxt"
+                                    data-bind="text: $data.nome"> </span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center rowContentvid"
+            data-bind="visible: parcData.about.length &gt; 0 || vid.length &gt; 0">
+            <div class="col-8 text-center colContent">
+                <div>
+                    <h1 class="titles">Sobre n&oacute;s</h1>
+                </div>
+
+                <p style="margin-top: 2rem"><span class="text-secondary" data-bind="text: parcData.about"></span></p>
+
+                <div class="videowrapper" data-bind="visible: vid.length &gt; 0" style="margin-top: 2rem"><iframe
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen="" data-bind="attr: { src: vid }" frameborder="0" src=""
+                        title="YouTube video player"></iframe></div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center rowContent">
+            <div class="col-8 text-center colContent">
+                <div data-bind="visible: parcData.setores.length &gt; 0">
+                    <h1 class="titles">Setores com Experi&ecirc;ncia</h1>
+
+                    <p><span class="text-secondary">Especializados em conciliar as necessidades de cada neg&oacute;cio
+                            aos diferentes setores de atividade, a nossa experi&ecirc;ncia permite adaptar as melhores
+                            ferramentas ao que as empresas procuram: velocidade na gest&atilde;o. Estes s&atilde;o
+                            alguns dos setores em que temos sucesso.</span></p>
+
+                    <div class="row justify-content-center">
+                        <div class="col-12 text-center colContent" data-bind="foreach: parcData.setores"><span
+                                class="badge bg-light text-dark chip"><i aria-hidden="true" class="fa fa-check"></i>
+                                <span data-bind="text: $data"> </span></span></div>
+                    </div>
+
+                    <hr />
+                </div>
+
+                <div data-bind="visible: parcData.servicos.length &gt; 0">
+                    <h1 class="titles">Os nossos Servi&ccedil;os</h1>
+
+                    <p><span class="text-secondary" data-bind="text: parcData.servslogan">.</span></p>
+
+                    <div class="row justify-content-center rowContent">
+                        <div class="col-12 text-center colContent" data-bind="foreach: parcData.servicos"><span
+                                class="badge bg-light text-dark chip"><i aria-hidden="true" class="fa fa-check"></i>
+                                <span data-bind="text: $data"></span> </span></div>
+                    </div>
+
+                    <div class="row justify-content-center">
+                        <div class="col-12 text-center colContent">
+                            <hr class="hrServ" /><a class="shareLink"
+                                data-bind="attr:{href: urlValid(parcData.servURL)}" target="_blank">Ver
+                                servi&ccedil;os</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center rowContentCount">
+            <div class="col-8 text-center colContent">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-sm-4 col-lg-4 text-center colContent">
+                        <h1 data-bind="text: floors(parcData.ncli)"
+                            style="font-size: calc(1.375rem + 1.5vw) !important">&nbsp;</h1>
+
+                        <p>Clientes</p>
+
+                        <hr />
+                    </div>
+
+                    <div class="col-12 col-sm-4 col-lg-4 text-center colContent">
+                        <h1 data-bind="text: parcData.ntec" style="font-size: calc(1.375rem + 1.5vw) !important">&nbsp;
+                        </h1>
+
+                        <p>T&eacute;cnicos</p>
+
+                        <hr />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center rowContent">
+            <div class="col-8 text-center colContent">
+                <div class="row justify-content-center">
+                    <div class="col-12 colContent text-start">
+                        <h1 class="titles" style="text-align: left !important">Atendimento presencial</h1>
+                    </div>
+                </div>
+
+                <div class="row justify-content-left">
+                    <div class="col-12 col-lg-6 colContent text-start">
+                        <p><span class="text-secondary">Para al&eacute;m do apoio remoto em todo o territ&oacute;rio
+                                nacional estamos presentes localmente nos seguintes distritos:</span></p>
+                    </div>
+
+                    <div class="col-12 col-lg-5 text-center colContent">
+                        <ul class="ulItems ulDist" data-bind="foreach: parcData.distritos">
+                            <li><span class="badge text-dark bullets"> <i aria-hidden="true" class="fa fa-check"
+                                        style="color: #ffd8dd !important; margin-right: 2rem"></i><span
+                                        data-bind="text: $data"></span> </span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="row justify-content-center contactos">
+                    <div class="col-12 col-lg-6 text-center colContentMap order-2 order-lg-1">
+                        <div class="z-depth-1-half map-container" id="map-container-google-1"><iframe allowfullscreen=""
+                                data-bind="attr:{src: gmaps}" frameborder="0" style="border: 0"></iframe></div>
+                        <!--                     <div class="mapouter" style="margin: auto;">
+                          <div class="gmap_canvas">
+                              <iframe class="mapsSize" frameborder="0" id="gmap_canvas" marginheight="0" marginwidth="0" scrolling="no" src="https://maps.google.com/maps?q=PHC%20software,%20lisboa&amp;t=&amp;z=15&amp;ie=UTF8&amp;iwloc=&amp;output=embed"></iframe>
+                          </div>
+                      </div> -->
+                    </div>
+
+                    <div class="col-12 col-lg-6 text-start colContent order-1 order-lg-2" id="idParc">
+                        <h1 class="titles" style="text-align: left !important">Contactos</h1>
+
+                        <p><span> <i aria-hidden="true" class="fa fa-map" style="color: #ea0029 !important"></i> <span
+                                    data-bind="text: parcData.morada"
+                                    style="color: #171717 !important; font-weight: bold"></span> <span>,&nbsp;</span>
+                                <span data-bind="text: parcData.codpost"
+                                    style="color: #171717 !important; font-weight: bold"></span><span>,&nbsp;</span>
+                                <span data-bind="text: parcData.local"
+                                    style="color: #171717 !important; font-weight: bold"></span> </span></p>
+
+                        <p><span> <span style="color: #ea0029 !important"><strong>ID</strong></span> <span
+                                    data-bind="text: parcData.idParc"
+                                    style="color: #171717 !important; font-weight: bold"></span> </span></p>
+
+                        <ul class="ulItems ulSocials">
+                            <li><a data-bind="visible: parcData.fb.length &gt;0, attr:{href: urlValid(parcData.fb)}"
+                                    href="#" target="_blank"><span class="bullets"><i class="fa-brands fa-facebook"
+                                            style="margin-right: 1rem"></i>Facebook</span> </a></li>
+                            <li><a data-bind="visible: parcData.twt.length &gt;0, attr:{href: urlValid(parcData.twt)}"
+                                    href="#" target="_blank"><span class="bullets"><i class="fa-brands fa-twitter"
+                                            style="margin-right: 1rem"></i>Twitter</span> </a></li>
+                            <li><a data-bind="visible: parcData.lkin.length &gt;0, attr:{href: urlValid(parcData.lkin)}"
+                                    href="#" target="_blank"><span class="bullets"><i class="fa-brands fa-linkedin-in"
+                                            style="margin-right: 1rem"></i>LinkedIn</span> </a></li>
+                            <li><a data-bind="visible: parcData.yt.length &gt;0, attr:{href: urlValid(parcData.yt)}"
+                                    href="#" target="_blank"><span class="bullets"><i class="fa-brands fa-youtube"
+                                            style="margin-right: 1rem"></i>Youtube</span> </a></li>
+                            <li><a data-bind="visible: parcData.ig.length &gt;0, attr:{href: urlValid(parcData.ig)}"
+                                    href="#" target="_blank"><span class="bullets"><i class="fa-brands fa-instagram"
+                                            style="margin-right: 1rem"></i>Instagram</span> </a></li>
+                        </ul>
+
+                        <div class="row justify-content-start">
+                            <div class="col-12 col-xl-5"><a class="btn btnParcPrim"
+                                    data-bind="attr:{href: urlValid(parcData.www)}" href="#" target="_blank">Website
+                                    Parceiro <i class="fa-solid fa-arrow-up-right-from-square"
+                                        style="font-size: 10px"></i> </a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center rowContentAction">
+            <div class="col-8 text-center colContent">
+                <h1 class="titles">Experimente o PHC CS com este Parceiro!</h1>
+
+                <p><span class="whiteText">Acelere os resultados da sua empresa.</span></p>
+
+                <div class="row justify-content-center">
+                    <div class="col-12 col-lg-5"><a class="btn btnParcSec" data-bind="attr:{href: demo}"
+                            style="font-size: 20px !important" target="_blank">Pedido de demo</a></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center rowContent">
+            <div class="col-8 text-center colContent">
+                <div class="jumbotron jumbotron-fluid">
+                    <div class="container" id="jumboContainer">
+                        <p class="lead">As informa&ccedil;&otilde;es nesta p&aacute;gina s&atilde;o fornecidas sem
+                            qualquer tipo de garantia. Sublinhamos que a PHC n&atilde;o garante o servi&ccedil;o do
+                            Parceiro. Destacamos que a certifica&ccedil;&atilde;o da PHC indica que alguns ou todos os
+                            membros da equipa conclu&iacute;ram os cursos e foram avaliados pela PHC como proficientes
+                            na utiliza&ccedil;&atilde;o do software da PHC. A especializa&ccedil;&atilde;o PHC indica
+                            que alguns ou todos os membros da equipa conclu&iacute;ram v&aacute;rios m&oacute;dulos de
+                            forma&ccedil;&atilde;o, de modo a desenvolverem habilidades nessa &aacute;rea. A PHC
+                            n&atilde;o avalia a profici&ecirc;ncia de nenhum Parceiro individual ou de uma empresa
+                            enquanto contabilista ou consultor financeiro. Destacamos que os Parceiros certificados pela
+                            PHC e Parceiros com especializa&ccedil;&otilde;es setoriais n&atilde;o s&atilde;o
+                            colaboradores da PHC Software.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row footer justify-content-center">
+        <div class="col-11 text-center">
+            <div class="row">
+                <div class="col-12 col-md-4 align-self-center">
+                    <p class="footerText" style="text-align: start">&copy; Copyright PHC Software. Todos os direitos
+                        reservados.</p>
+
+                    <p style="text-align: start"><a class="footerText"
+                            href="https://phcsoftware.com/politica-de-privacidade/" target="_blank">Pol&iacute;tica de
+                            Privacidade</a> <a class="footerText"
+                            href="https://phcsoftware.com/politica-da-qualidade-phc/" target="_blank">Pol&iacute;tica de
+                            Qualidade</a></p>
+                </div>
+
+                <div class="col-12 col-md-8 align-self-center text-end">
+                    <div class="col-12 text-center EspBadgeContainer">
+                        <div class="footerFlex"><a href="https://phcsoftware.com/phc-voice-framework/"><img alt=""
+                                    height="60" loading="lazy"
+                                    src="https://phcsoftware.com/pt/wp-content/uploads/sites/3/2024/01/logo-lisboa.svg"
+                                    width="276" /> </a></div>
+
+                        <div class="footerFlex"><a href="https://phcsoftware.com/projetos/"><img alt="" height="103"
+                                    loading="lazy"
+                                    src="https://phcsoftware.com/pt/wp-content/uploads/sites/3/2024/01/portugal-2020.svg"
+                                    width="348" /> </a></div>
+
+                        <div class="footerFlex"><a href="https://phcsoftware.com/projetos/"><img alt="" height="103"
+                                    loading="lazy" src="https://phcsoftware.com/pt/wp-content/uploads/sites/3/2024/01/ue.svg"
+                                    width="348" /> </a></div>
+
+                        <div class="footerFlex"><a href="https://phcsoftware.com/si-internacionalizacao-8667/"><img
+                                    alt="" height="103" loading="lazy"
+                                    src="https://phcsoftware.com/pt/wp-content/uploads/sites/3/2024/01/compete-2020.svg"
+                                    width="348" /> </a></div>
+
+                        <div class="footerFlex"><img alt=""  id="sgsImg" height="70" loading="lazy"
+                                src="https://phcsoftware.com/pt/wp-content/uploads/sites/3/2024/01/sgs-logo.svg" width="71" />
+                        </div>
+
+                        <!-- <div class="footerFlex"><a href="https://www.livroreclamacoes.pt/inicio/reclamacao"><img alt=""
+                                    height="70" loading="lazy"
+                                    src="https://phcsoftware.com/wp-content/uploads/2021/01/Logo_Portal-de-Reclamacoes.png"
+                                    width="153" /> </a></div> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
