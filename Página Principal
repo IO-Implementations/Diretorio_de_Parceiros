@@ -1,0 +1,733 @@
+<script>
+    var Model = function () {
+        var self = this;
+        this.all = ko.observableArray([]);
+        this.pageNumber = ko.observable(0);
+        this.nbPerPage = 10;
+        debugger;
+        /*this.totalPages = ko.computed(function() {
+                var div = Math.floor(self.all().length / self.nbPerPage);
+                div += self.all().length % self.nbPerPage > 0 ? 1 : 0;
+                return div - 1;
+            });*/
+
+        /*Object Model class*/
+        this.oMaker = function (
+            nome,
+            tpparc,
+            zona,
+            rank,
+            numtec,
+            numcli,
+            imglogo,
+            url,
+            slogan,
+            distritos,
+            setores,
+            prime
+        ) {
+            this.nome = ko.observable(nome);
+            this.tpparc = ko.observable(tpparc);
+            this.zona = ko.observable(zona);
+            this.rank = ko.observable(rank);
+            this.numtec = ko.observable(numtec);
+            this.numcli = ko.observable(numcli);
+            this.imglogo = ko.observable(imglogo);
+            this.url = ko.observable(url);
+            this.slogan = ko.observable(slogan);
+            this.distritos = ko.observableArray(distritos);
+            this.setores = ko.observableArray(setores);
+            this.prime = ko.observable(prime);
+        };
+
+        /* Query */
+
+        this.query = ko.observable("");
+        /*reset pagenumber com nova pesquisa*/
+        this.query.subscribe(function () {
+            self.pageNumber(0);
+        });
+
+        /* Filters */
+        this.filterTpParc = ko.observable("");
+        this.filterRegion = ko.observable("");
+        this.filterSetr = ko.observable("");
+
+        this.availableDist = ko.observableArray([
+            "",
+            "Aveiro",
+            "Beja",
+            "Braga",
+            "Bragança",
+            "Castelo Branco",
+            "Coimbra",
+            "Évora",
+            "Faro",
+            "Guarda",
+            "Leiria",
+            "Lisboa",
+            "Portalegre",
+            "Porto",
+            "Santarém",
+            "Setúbal",
+            "Viana do Castelo",
+            "Vila Real",
+            "Viseu",
+            "Madeira",
+            "Açores",
+            "Espanha",
+            "Angola",
+            "Moçambique",
+            "Perú",
+            "Cabo Verde",
+        ]);
+
+        this.availableTP = ko.observableArray([
+            "",
+            "Enterprise Partner",
+            "Advanced Partner",
+            "Corporate Partner",
+            "Prime Partner"
+        ]);
+
+        this.availableSetr = ko.observableArray([
+            "",
+            "Agricultura, produção animal, caça, silvicultura e pesca",
+            "Indústrias extrativas",
+            "Indústrias transformadoras",
+            "Eletricidade, gás e água",
+            "Construção",
+            "Comércio por grosso",
+            "Comércio a retalho",
+            "Transporte e armazenagem",
+            "Alojamento, restauração e similares",
+            "Atividades financeiras e de seguros",
+            "Atividades imobiliárias",
+            "Educação",
+            "Atividades de saúde humana e apoio social",
+            "Consultoria",
+            "Tecnologia",
+            "Gabinetes de contabilidade",
+        ]);
+
+        this.filterComputedTP = ko.computed(function () {
+            switch (self.filterTpParc()) {
+                case "Enterprise Partner":
+                    return "e";
+                    break;
+                case "Advanced Partner":
+                    return "a";
+                    break;
+                case "Corporate Partner":
+                    return "c";
+                    break;
+                case "Prime Partner":
+                    return "p";
+                    break;
+                default:
+                    return "";
+            }
+        });
+
+        /* Sort */
+        /*this.sortingOption = ko.observable();
+            self.sortingOption("Ordem: Melhor escolha");*/
+
+        this.sortMethod = ko.observable("");
+        self.sortMethod("me");
+
+        this.sortnFilter = function () {
+            return ko.utils.arrayFilter(
+                self.all.sorted(function (left, right) {
+                    switch (self.sortMethod()) {
+                        case "me":
+                            return left.rank() === right.rank()
+                                ? 0
+                                : left.rank() < right.rank()
+                                    ? -1
+                                    : 1;
+                            break;
+                        case "rg":
+                            return left.zona() === right.zona()
+                                ? 0
+                                : left.zona() < right.zona()
+                                    ? -1
+                                    : 1;
+                            break;
+                        case "nt":
+                            return left.numtec() === right.numtec()
+                                ? 0
+                                : left.numtec() < right.numtec()
+                                    ? 1
+                                    : -1;
+                            break;
+                        case "nc":
+                            return left.numcli() === right.numcli()
+                                ? 0
+                                : left.numcli() < right.numcli()
+                                    ? 1
+                                    : -1;
+                            break;
+                        default:
+                            return left.rank() === right.rank()
+                                ? 0
+                                : left.rank() < right.rank()
+                                    ? -1
+                                    : 1;
+                    }
+                }),
+                function (item) {
+                    let result = true;
+
+                    //filtro TP
+                    if (self.filterComputedTP() != "") {
+                        if (self.filterComputedTP() == "p" && item.prime() === true) {
+                            result = true;
+                        } else if (item.tpparc().toLowerCase() == self.filterComputedTP()) {
+                            result = true;
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        result = true;
+                    }
+
+                    //Filtro setor
+                    if (self.filterSetr().toLowerCase() != "") {
+                        ko.utils.arrayFilter(item.setores(), function (setr) {
+                            return setr.toLowerCase() == self.filterSetr().toLowerCase()
+                                ? true
+                                : false;
+                        }).length > 0
+                            ? (result = true)
+                            : (result = false);
+
+                        if (result == false) {
+                            return false;
+                        }
+                    } else {
+                        result = true;
+                    }
+
+
+                    //Filtro Regiao
+                    if (self.filterRegion() != "") {
+                        item.zona().toLowerCase() == self.filterRegion().toLowerCase()
+                            ? (result = true)
+                            : (result = false);
+
+                        ko.utils.arrayFilter(item.distritos(), function (dist) {
+                            return dist.toLowerCase() == self.filterRegion().toLowerCase()
+                                ? true
+                                : false;
+                        }).length > 0
+                            ? (result = true)
+                            : (result = false);
+                        if (result == false) {
+                            return false;
+                        }
+
+                    } else {
+                        result = true;
+                    }
+
+                    return result;
+                }
+            );
+        };
+
+        /* paginas */
+
+        /*numero de paginas dinamico*/
+        this.totalPages = ko.computed(function () {
+            var div = Math.floor(self.sortnFilter().length / self.nbPerPage);
+            div += self.sortnFilter().length % self.nbPerPage > 0 ? 1 : 0;
+            return div == 0 ? div : div - 1;
+        });
+
+        /*Main VIEW*/
+        this.paginated = ko.computed(function () {
+            var first = self.pageNumber() * self.nbPerPage;
+            /*return self.all.slice(first, first + self.nbPerPage);*/
+
+            return self
+                .sortnFilter()
+                .slice(0, self.pageNumber() * self.nbPerPage + self.nbPerPage + 1);
+        });
+
+        this.isBizDev = function (tp, data) {
+            switch (tp) {
+                case "dev":
+                    switch (data.tpparc().toLowerCase()) {
+                        case "bd":
+                            return true;
+                            break;
+                        case "b":
+                            return false;
+                            break;
+                        case "d":
+                            return true;
+                            break;
+                        default:
+                            return false;
+                    }
+
+                    break;
+                case "biz":
+                    switch (data.tpparc().toLowerCase()) {
+                        case "bd":
+                            return true;
+                            break;
+                        case "b":
+                            return true;
+                            break;
+                        case "d":
+                            return false;
+                            break;
+                        default:
+                            return false;
+                    }
+                    break;
+                default:
+                    return false;
+            }
+        };
+
+        this.isPartner = function (tp, data) {
+            const tpparcLower = data.tpparc().toLowerCase();
+            const validTypes = {
+                enterprise: "e",
+                advanced: "a",
+                corporate: "c"
+            };
+
+            return validTypes[tp] === tpparcLower;
+        };
+        this.floors = function (num) {
+            let resultStep;
+            switch (true) {
+                case num <= 10:
+                    resultStep = "1 - 10";
+                    break;
+                case num > 10 && num <= 30:
+                    resultStep = "11 - 30";
+                    break;
+                case num > 30 && num <= 100:
+                    resultStep = "31 - 100";
+                    break;
+                case num > 100:
+                    resultStep = "101 +";
+                    break;
+            }
+
+            return resultStep;
+        };
+
+        /*
+              OPÇÕES DE PÁGINAS  
+            */
+
+        this.hasMore = ko.computed(function () {
+            return self.totalPages() == 0
+                ? false
+                : self.pageNumber() !== self.totalPages()
+                    ? true
+                    : false;
+        });
+
+        this.more = function () {
+            if (self.pageNumber() < self.totalPages()) {
+                self.pageNumber(self.pageNumber() + 1);
+            }
+        };
+
+        this.last = ko.computed(function () {
+            return self.totalPages() == 0
+                ? false
+                : self.pageNumber() == self.totalPages()
+                    ? true
+                    : false;
+        });
+
+        this.hasPrevious = ko.computed(function () {
+            return self.pageNumber() !== 0;
+        });
+        this.hasNext = ko.computed(function () {
+            return self.pageNumber() !== self.totalPages();
+        });
+        this.next = function () {
+            if (self.pageNumber() < self.totalPages()) {
+                self.pageNumber(self.pageNumber() + 1);
+            }
+        };
+
+        this.previous = function () {
+            if (self.pageNumber() != 0) {
+                self.pageNumber(self.pageNumber() - 1);
+            }
+        };
+
+        this.loadData = function () {
+            /*PARC*/ var data =[{"calculated_nps":0.0,"id":"","nome":"Almeida, Brandão & Salgado, Lda. (ABS Informática)","zona":"Senhora da Hora","slogan":"Parceiro PHC Enterprise Partner e Prime Partner PHC. Na ABS Informática possuímos competências para a implementação de quaisquer projetos PHC, dos mais simples aos mais complexos!","tpparc":"E","rank":58.0,"numtec":12.0,"numcli":100.0,"prime":true,"url":"../programs/ewpview.aspx?codigo=dirpcsx100755","imglogo":"/Portal/File/IflImage/Q01NMDIwNjIxMzc4NzcsNDI0MDM1MTE5?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20231120183141","nps":33.0,"nps1":9.0,"distritos":["Porto","Braga","Aveiro","Bragança","Castelo Branco","Coimbra","Évora","Faro","Guarda","Beja","Leiria","Lisboa","Portalegre","Santarém","Setúbal","Viana do Castelo","Vila Real","Viseu","Madeira"],"setores":["Tecnologia","Indústrias extrativas","Comércio por grosso e a retalho","Atividades financeiras e de seguros","Indústrias transformadoras","Construção","Eletricidade, gás e água","Consultoria","Gabinetes de contabilidade","Agricultura, produção animal, caça, silvicultura e pesca","Alojamento, restauração e similares","Atividades de saúde humana e apoio social","Atividades imobiliárias","Educação","Transporte e armazenagem"]},{"calculated_nps":0.0,"id":"","nome":"Informea - Lousado & Couceiro, Lda","zona":"Mealhada","slogan":"Parceiros para a vida!","tpparc":"A","rank":116.0,"numtec":3.0,"numcli":57.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100737","imglogo":"/Portal/File/IflImage/Q01NMDIwNjIxNTMwODgsMjI4MDM1MTE5?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230727230425","nps":43.0,"nps1":7.0,"distritos":["Leiria","Aveiro","Coimbra"],"setores":["Alojamento, restauração e similares","Atividades de saúde humana e apoio social","Comércio por grosso e a retalho","Construção","Consultoria","Gabinetes de contabilidade","Indústrias transformadoras","Tecnologia","Transporte e armazenagem"]},{"calculated_nps":48.0,"id":"","nome":"BASETX CONSULTING LDA","zona":"Gandra","slogan":"Desenvolvemos soluções, projetamos confiança.","tpparc":"E","rank":30.0,"numtec":28.0,"numcli":251.0,"prime":true,"url":"../programs/ewpview.aspx?codigo=dirpcsx100821","imglogo":"/Portal/File/IflImage/Q01NMDMwOTAzMzk1NTYsMzg0MDQ0NTkz?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230508164346","nps":48.0,"nps1":23.0,"distritos":["Porto","Braga"],"setores":["Eletricidade, gás e água","Comércio por grosso e a retalho","Transporte e armazenagem","Tecnologia","Consultoria","Indústrias extrativas","Construção","Indústrias transformadoras"]},{"calculated_nps":0.0,"id":"","nome":"Equiregis - Informática","zona":"Vila Nova de Famalicão","slogan":"Fundada em 1988, somos uma empresa especializada na comercialização e instalação de equipamentos e software de elevada qualidade e fiabilidade.","tpparc":"E","rank":65.0,"numtec":6.0,"numcli":133.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100848","imglogo":"/Portal/File/IflImage/Q01NMDMxMTE4NjExMDMsOTYwMDUyNTk2?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230919105645","nps":45.0,"nps1":11.0,"distritos":["Aveiro","Viana do Castelo","Porto","Braga"],"setores":["Alojamento, restauração e similares","Indústrias transformadoras","Indústrias extrativas","Construção","Educação"]},{"calculated_nps":44.0,"id":"","nome":"FTP - Comércio de Equipamento Informático, Lda","zona":"Ermesinde","slogan":"A melhor promoção da FTP é a satisfação dos nossos clientes!","tpparc":"E","rank":33.0,"numtec":17.0,"numcli":252.0,"prime":true,"url":"../programs/ewpview.aspx?codigo=dirpcsx100868","imglogo":"/Portal/File/IflImage/Q01NMDQwMjExMzY1MTIsNTAyMDE5MTg0?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230919110045","nps":44.0,"nps1":16.0,"distritos":["Braga","Aveiro","Porto","Viana do Castelo","Lisboa","Coimbra"],"setores":["Construção","Agricultura, produção animal, caça, silvicultura e pesca","Indústrias transformadoras","Indústrias extrativas","Tecnologia","Transporte e armazenagem","Comércio por grosso e a retalho","Consultoria"]},{"calculated_nps":0.0,"id":"","nome":"SOLINF - SOLUÇÕES DE INFORMÁTICA LDA","zona":"São João de Ovar","slogan":"O mundo evolui e o seu negócio também. Tornamos as Empresas mais digitais, muito mais próximas dos seus clientes.","tpparc":"A","rank":155.0,"numtec":2.0,"numcli":18.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx2265","imglogo":"/Portal/File/IflImage/Q01SMjEwMjAzNTU0NjEsOTI2MDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230323155210","nps":0.0,"nps1":2.0,"distritos":["Porto","Aveiro"],"setores":["Comércio por grosso e a retalho","Consultoria","Gabinetes de contabilidade"]},{"calculated_nps":0.0,"id":"","nome":"JDP Informática","zona":"Penafiel","slogan":"Especialistas em implementação de software de gestão","tpparc":"A","rank":188.0,"numtec":3.0,"numcli":15.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx2299","imglogo":"/Portal/File/IflImage/Q01SMjExMjEzNDUyMTksMDc0MDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230327153300","nps":0.0,"nps1":1.0,"distritos":["Porto","Aveiro"],"setores":["Comércio por grosso e a retalho","Construção","Consultoria","Eletricidade, gás e água","Gabinetes de contabilidade","Indústrias transformadoras","Tecnologia","Transporte e armazenagem","Indústrias extrativas","Alojamento, restauração e similares","Agricultura, produção animal, caça, silvicultura e pesca"]},{"calculated_nps":0.0,"id":"","nome":"TIC PROJECT - Tecnologias Informação e Consultoria, Lda","zona":"Óbidos","slogan":"Aumente a produtividade do seu Negócio e Reduza Custos","tpparc":"E","rank":139.0,"numtec":5.0,"numcli":9.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx2303","imglogo":"/Portal/File/IflImage/Q01SMjIwMTI2NDM5NjYsODA5MDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230327151733","nps":0.0,"nps1":1.0,"distritos":["Leiria","Lisboa","Santarém"],"setores":["Comércio por grosso e a retalho","Consultoria","Indústrias transformadoras","Tecnologia","Transporte e armazenagem"]},{"calculated_nps":11.0,"id":"","nome":"Elevar Global - Engenharia, Consultoria e Formação, Lda","zona":"Casal dos Matos - Pousos","slogan":"Elevamos o seu negócio","tpparc":"E","rank":77.0,"numtec":16.0,"numcli":125.0,"prime":true,"url":"../programs/ewpview.aspx?codigo=dirpcsx1805","imglogo":"/Portal/File/IflImage/Q1NPMTUwMzI2NzAzODAsMTA3MDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230511102046","nps":11.0,"nps1":19.0,"distritos":["Aveiro","Castelo Branco","Coimbra","Faro","Guarda","Lisboa","Santarém","Portalegre","Leiria"],"setores":["Construção","Eletricidade, gás e água","Comércio por grosso e a retalho","Atividades imobiliárias","Agricultura, produção animal, caça, silvicultura e pesca","Atividades financeiras e de seguros","Tecnologia","Indústrias transformadoras","Indústrias extrativas","Gabinetes de contabilidade","Transporte e armazenagem"]},{"calculated_nps":47.0,"id":"","nome":"BNEXT Consulting SA - Accelerating Business","zona":"Santa Maria da Feira","slogan":"Somos especialistas em soluções de Indústria e Logística.","tpparc":"E","rank":35.0,"numtec":25.0,"numcli":373.0,"prime":true,"url":"../programs/ewpview.aspx?codigo=dirpcsx2329","imglogo":"/Portal/File/IflImage/Q1NPMjIwODI2NTIzNzYsNjI2MDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20240918115022","nps":47.0,"nps1":32.0,"distritos":["Portalegre","Évora","Santarém","Coimbra","Leiria","Vila Real","Porto","Lisboa","Braga","Castelo Branco","Aveiro","Guarda","Setúbal","Viana do Castelo","Açores","Faro","Madeira","Beja","Bragança","Viseu"],"setores":["Indústrias extrativas","Educação","Tecnologia","Comércio por grosso e a retalho","Indústrias transformadoras","Transporte e armazenagem","Construção","Consultoria","Agricultura, produção animal, caça, silvicultura e pesca"]},{"calculated_nps":0.0,"id":"","nome":"PTDI - Distribuição Informática, Lda","zona":"Tercena","slogan":"PTDI - fazemos por TI","tpparc":"A","rank":181.0,"numtec":2.0,"numcli":2.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1833","imglogo":"/Portal/File/IflImage/REJQMTUwNTExMzkwNzEsMzAxMDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20240131123330","nps":0.0,"nps1":1.0,"distritos":["Setúbal","Lisboa"],"setores":["Construção","Comércio por grosso e a retalho","Tecnologia","Consultoria"]},{"calculated_nps":0.0,"id":"","nome":"Iegari, Lda.","zona":"Leiria","slogan":"Uma gestão inteligente","tpparc":"C","rank":157.0,"numtec":1.0,"numcli":12.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100611","imglogo":"/Portal/File/IflImage/RUwgMDAxMTA4NTIxODYuODA1MDg2NjU0?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230721182914","nps":0.0,"nps1":2.0,"distritos":["Leiria","Porto"],"setores":["Comércio por grosso e a retalho","Atividades de saúde humana e apoio social","Agricultura, produção animal, caça, silvicultura e pesca","Alojamento, restauração e similares","Gabinetes de contabilidade","Tecnologia"]},{"calculated_nps":0.0,"id":"","nome":"Acitel 4 Serviços de Telecomunicações, S.A.","zona":"Abóboda","slogan":"Implementação de soluções de gestão ERP PHC","tpparc":"E","rank":105.0,"numtec":8.0,"numcli":43.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1632","imglogo":"/Portal/File/IflImage/RUwyMTAzMDI1NzUyNSw0MzAxMjIwNTY%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230419105027","nps":60.0,"nps1":5.0,"distritos":["Porto","Lisboa"],"setores":["Alojamento, restauração e similares","Comércio por grosso e a retalho","Construção","Consultoria","Gabinetes de contabilidade","Tecnologia","Transporte e armazenagem","Atividades imobiliárias"]},{"calculated_nps":0.0,"id":"","nome":"PETRADIGITAL - TECHNOLOGIES, LDA","zona":"Sarilhos Grandes","slogan":"A tecnologia ao seu dispor para que dedique tempo ao que mais importa","tpparc":"A","rank":150.0,"numtec":2.0,"numcli":31.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx2189","imglogo":"/Portal/File/IflImage/RU1TMTkwNDMwNzQxNzYuNTQ1MDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230602112927","nps":0.0,"nps1":2.0,"distritos":"","setores":""},{"calculated_nps":0.0,"id":"","nome":"JME - Gabinete Técnico de Informática, Lda","zona":"Vila Real","slogan":"Elevamos o seu potencial de gestão","tpparc":"A","rank":106.0,"numtec":4.0,"numcli":110.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100026","imglogo":"/Portal/File/IflImage/R0VOOTkwODE3NDIyMDAsMDQ3MDAwMDI2?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230919105751","nps":38.0,"nps1":8.0,"distritos":["Bragança","Vila Real","Viseu"],"setores":["Agricultura, produção animal, caça, silvicultura e pesca","Consultoria","Indústrias extrativas","Eletricidade, gás e água","Comércio por grosso e a retalho","Atividades financeiras e de seguros","Alojamento, restauração e similares","Construção","Indústrias transformadoras","Atividades de saúde humana e apoio social","Transporte e armazenagem","Tecnologia","Atividades imobiliárias","Educação"]},{"calculated_nps":0.0,"id":"","nome":"hes - Sistemas Informáticos, Lda","zona":"Cova das Faias - Marrazes - Leiria","slogan":"Somos o parceiro PHC para a Transformação Digital da sua empresa.","tpparc":"E","rank":52.0,"numtec":8.0,"numcli":84.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100064","imglogo":"/Portal/File/IflImage/R0VOOTkwODE3NDIyMDEsMjYyMDAwMDYz?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230919105715","nps":43.0,"nps1":7.0,"distritos":["Aveiro","Coimbra","Leiria","Lisboa","Santarém"],"setores":["Agricultura, produção animal, caça, silvicultura e pesca","Alojamento, restauração e similares","Atividades financeiras e de seguros","Atividades imobiliárias","Comércio por grosso e a retalho","Construção","Consultoria","Eletricidade, gás e água","Gabinetes de contabilidade","Indústrias extrativas","Tecnologia","Indústrias transformadoras","Transporte e armazenagem"]},{"calculated_nps":0.0,"id":"","nome":"Máxima - Informática e Telecomunicações, Lda","zona":"Oliveira do Bairro","slogan":"Soluções Inteligentes","tpparc":"E","rank":83.0,"numtec":12.0,"numcli":94.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100093","imglogo":"/Portal/File/IflImage/R0VOOTkwODE3NDIyMDIsMTQ5MDAwMDg5?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230303105420","nps":0.0,"nps1":3.0,"distritos":["Viseu","Coimbra","Porto","Braga","Aveiro","Guarda"],"setores":["Agricultura, produção animal, caça, silvicultura e pesca","Construção","Comércio por grosso e a retalho","Consultoria","Gabinetes de contabilidade","Indústrias extrativas","Indústrias transformadoras","Tecnologia","Transporte e armazenagem","Atividades imobiliárias","Atividades financeiras e de seguros","Alojamento, restauração e similares","Atividades de saúde humana e apoio social","Educação","Eletricidade, gás e água"]},{"calculated_nps":36.0,"id":"","nome":"Microvesa - Informática e Serviços, Lda","zona":"Vila Nova de Gaia","slogan":"Adaptamos o PHC CS à sua Empresa","tpparc":"A","rank":86.0,"numtec":7.0,"numcli":124.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100103","imglogo":"/Portal/File/IflImage/R0VOOTkwODE3NDIyMDIsNDgyMDAwMDk5?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20221025112154","nps":36.0,"nps1":14.0,"distritos":["Viseu","Coimbra","Porto","Braga","Aveiro","Vila Real"],"setores":["Indústrias transformadoras","Comércio por grosso e a retalho","Gabinetes de contabilidade","Atividades financeiras e de seguros","Transporte e armazenagem"]},{"calculated_nps":0.0,"id":"","nome":"Resolve - Consultadoria em Gestão e Organização e S.V.E","zona":"Nogueira - Braga","slogan":"Numa viagem de 29 anos, entendemos e falamos a linguagem dos gestores, conhecemos com detalhe os processos operacionais das empresas, conhecemos profundamente a tecnologia PHC.  EFICÁCIA E RESULTADOS!","tpparc":"E","rank":62.0,"numtec":9.0,"numcli":91.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100145","imglogo":"/Portal/File/IflImage/R0VOOTkwODE3NDIyMDMsNzkzMDAwMTM5?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230328114227","nps":25.0,"nps1":8.0,"distritos":["Lisboa","Vila Real","Porto","Viseu","Braga","Aveiro","Viana do Castelo","Bragança"],"setores":["Transporte e armazenagem","Tecnologia","Alojamento, restauração e similares","Indústrias extrativas","Comércio por grosso e a retalho","Indústrias transformadoras","Construção","Agricultura, produção animal, caça, silvicultura e pesca","Eletricidade, gás e água","Atividades imobiliárias","Consultoria","Gabinetes de contabilidade","Atividades de saúde humana e apoio social","Atividades financeiras e de seguros","Educação"]},{"calculated_nps":0.0,"id":"","nome":"Saída - Soluções Multimedia e Computadores, Lda","zona":"Ovar","slogan":"Foque-se no que é realmente importante para o seu negócio crescer e deixe a tecnologia connosco!","tpparc":"C","rank":119.0,"numtec":2.0,"numcli":34.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100217","imglogo":"/Portal/File/IflImage/R0VOOTkwODE3NDIyMDYsMzA2MDAwMjA5?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230915140626","nps":0.0,"nps1":3.0,"distritos":["Aveiro","Porto"],"setores":["Atividades imobiliárias","Tecnologia","Comércio por grosso e a retalho"]},{"calculated_nps":0.0,"id":"","nome":"INTRANET - Soluções Informáticas, Lda.","zona":"Tomar","slogan":"O seu parceiro do Software PHC CS !!","tpparc":"A","rank":61.0,"numtec":2.0,"numcli":54.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100233","imglogo":"/Portal/File/IflImage/R0VOOTkwODE3NDIyMDcsMDE0MDAwMjI0?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230324150152","nps":0.0,"nps1":2.0,"distritos":["Santarém","Coimbra","Leiria"],"setores":["Tecnologia","Comércio por grosso e a retalho","Indústrias transformadoras","Consultoria","Atividades financeiras e de seguros","Gabinetes de contabilidade"]},{"calculated_nps":0.0,"id":"","nome":"Jorinf - Informática e Telecomunicações, Lda","zona":"Coimbra","slogan":"Parceiro Enterprise","tpparc":"E","rank":95.0,"numtec":11.0,"numcli":182.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100240","imglogo":"/Portal/File/IflImage/R0VOOTkwODE3NDIyMDcsMjM1MDAwMjMx?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20240716161013","nps":25.0,"nps1":12.0,"distritos":["Aveiro","Castelo Branco","Coimbra","Guarda","Luanda - Província de Luanda","Viseu","Leiria"],"setores":["Agricultura, produção animal, caça, silvicultura e pesca","Atividades de saúde humana e apoio social","Atividades imobiliárias","Comércio por grosso e a retalho","Construção","Consultoria","Eletricidade, gás e água","Gabinetes de contabilidade","Indústrias transformadoras","Tecnologia","Transporte e armazenagem"]},{"calculated_nps":56.0,"id":"","nome":"Inforbeta - Tecnologias de Informação, Lda","zona":"Vila do Conde","slogan":"A InforBeta é parceiro PHC Partner Enterprise . Temos uma relação de 27 anos com a PHC e investimos na especialização da nossa equipa de consultores e na adaptação de soluções nas diversas áreas.","tpparc":"E","rank":53.0,"numtec":5.0,"numcli":212.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100303","imglogo":"/Portal/File/IflImage/R0VOOTkwODE3NDIyMTIsNDkwMDAwMzg4?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20220824100825","nps":56.0,"nps1":18.0,"distritos":["Santarém","Porto","Lisboa","Aveiro","Viana do Castelo","Braga"],"setores":["Consultoria","Atividades financeiras e de seguros","Indústrias transformadoras","Construção","Atividades imobiliárias","Comércio por grosso e a retalho","Agricultura, produção animal, caça, silvicultura e pesca","Eletricidade, gás e água"]},{"calculated_nps":0.0,"id":"","nome":"BROWLIST, LDA","zona":"Águeda","slogan":"Browlist, Lda. - Soluções Informáticas","tpparc":"A","rank":138.0,"numtec":3.0,"numcli":79.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1991","imglogo":"/Portal/File/IflImage/SkNJMTcwMTEyNjIxNzAsNTkyMDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20231106215821","nps":0.0,"nps1":3.0,"distritos":["Aveiro"],"setores":""},{"calculated_nps":0.0,"id":"","nome":"Saturno.net - sistemas de informação, Lda.","zona":"Oeiras","slogan":"Aceleramos os resultados da sua empresa","tpparc":"E","rank":38.0,"numtec":7.0,"numcli":156.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1046","imglogo":"/Portal/File/IflImage/SlMwMzA4MDU1MzMwNS4zMDQwNTYwMzA%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230511095248","nps":77.0,"nps1":13.0,"distritos":["Lisboa","Setúbal","Évora"],"setores":["Eletricidade, gás e água","Educação","Consultoria","Construção","Comércio por grosso e a retalho","Atividades imobiliárias","Atividades financeiras e de seguros","Atividades de saúde humana e apoio social","Alojamento, restauração e similares","Agricultura, produção animal, caça, silvicultura e pesca","Gabinetes de contabilidade","Indústrias extrativas","Indústrias transformadoras","Tecnologia","Transporte e armazenagem"]},{"calculated_nps":0.0,"id":"","nome":"T2S-Tecnologias e Soluções de Gestão Informática Lda","zona":"Quinta de São Nicolau de Fora","slogan":"Soluções para simplificar o dia-a-dia da sua Empresa!","tpparc":"E","rank":67.0,"numtec":6.0,"numcli":101.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1099","imglogo":"/Portal/File/IflImage/SlMwNDA5MTczNzg1OS4yMzQwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20220907171835","nps":91.0,"nps1":11.0,"distritos":["Açores","Lisboa","Setúbal","Porto","Viseu","Aveiro","Beja"],"setores":["Comércio por grosso e a retalho","Educação","Agricultura, produção animal, caça, silvicultura e pesca","Atividades imobiliárias","Atividades financeiras e de seguros","Construção","Atividades de saúde humana e apoio social","Consultoria","Gabinetes de contabilidade","Indústrias transformadoras","Tecnologia","Transporte e armazenagem"]},{"calculated_nps":0.0,"id":"","nome":"J.A.J. - Informática, Lda","zona":"Caldas da Rainha","slogan":"Transformando Desafios em Oportunidades","tpparc":"A","rank":89.0,"numtec":4.0,"numcli":50.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx13","imglogo":"/Portal/File/IflImage/TEIwMjAxMDI1MjQ5OCw1MDcwMzkyNjE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230918185024","nps":0.0,"nps1":3.0,"distritos":["Leiria","Lisboa"],"setores":["Agricultura, produção animal, caça, silvicultura e pesca","Comércio por grosso e a retalho","Eletricidade, gás e água","Gabinetes de contabilidade","Transporte e armazenagem"]},{"calculated_nps":53.0,"id":"","nome":"Sisgarbe - Soluções de Informática, Lda.","zona":"Faro","slogan":"Alinhamos o PHC CS com os seus objetivos de negócio","tpparc":"E","rank":82.0,"numtec":10.0,"numcli":181.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1180","imglogo":"/Portal/File/IflImage/TEIwNzA0MTE0MzkxMSwzMTYwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230919105317","nps":53.0,"nps1":15.0,"distritos":["Faro","Lisboa"],"setores":["Agricultura, produção animal, caça, silvicultura e pesca","Alojamento, restauração e similares","Atividades financeiras e de seguros","Atividades imobiliárias","Consultoria","Comércio por grosso e a retalho","Eletricidade, gás e água","Gabinetes de contabilidade","Tecnologia","Transporte e armazenagem"]},{"calculated_nps":0.0,"id":"","nome":"Secis - Informática, Lda.","zona":"Salvaterra de Magos","slogan":"Soluções focadas no seu negócio","tpparc":"E","rank":85.0,"numtec":8.0,"numcli":69.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1219","imglogo":"/Portal/File/IflImage/TEIwODA3Mjk1NDk0OSw5NzEwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20220909152826","nps":0.0,"nps1":3.0,"distritos":["Lisboa","Santarém","Setúbal"],"setores":["Comércio por grosso e a retalho","Transporte e armazenagem","Indústrias transformadoras","Educação","Construção","Tecnologia","Agricultura, produção animal, caça, silvicultura e pesca","Gabinetes de contabilidade","Consultoria"]},{"calculated_nps":0.0,"id":"","nome":"Consulting4it - Consultoria e Tec. de Informação, Lda.","zona":"Ponta Delgada","slogan":"Solução de gestão abrangente e adaptável a todas as áreas e setores da sua empresa","tpparc":"E","rank":32.0,"numtec":7.0,"numcli":64.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1261","imglogo":"/Portal/File/IflImage/TEIwOTA5MTQzNjcwNSw3MTMwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20220902160510","nps":83.0,"nps1":6.0,"distritos":["Açores","Lisboa"],"setores":["Atividades imobiliárias","Comércio por grosso e a retalho","Construção","Consultoria","Educação","Eletricidade, gás e água","Agricultura, produção animal, caça, silvicultura e pesca","Atividades de saúde humana e apoio social","Gabinetes de contabilidade","Indústrias transformadoras","Tecnologia","Transporte e armazenagem","Alojamento, restauração e similares","Atividades financeiras e de seguros"]},{"calculated_nps":0.0,"id":"","nome":"Main Service, Lda","zona":"Evora","slogan":"Apoiamos o seu Negócio com o Software de Gestão PHC CS, 100% personalizavel e adaptável às suas necessidades.","tpparc":"E","rank":115.0,"numtec":13.0,"numcli":118.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1318","imglogo":"/Portal/File/IflImage/TEIxMDA0MjY1MzI2NSw3NjcwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230403152957","nps":18.0,"nps1":11.0,"distritos":["Portalegre","Évora","Lisboa"],"setores":["Agricultura, produção animal, caça, silvicultura e pesca","Alojamento, restauração e similares","Atividades de saúde humana e apoio social","Atividades financeiras e de seguros","Gabinetes de contabilidade","Indústrias extrativas","Tecnologia","Indústrias transformadoras","Transporte e armazenagem","Atividades imobiliárias","Comércio por grosso e a retalho","Construção","Consultoria","Eletricidade, gás e água","Educação"]},{"calculated_nps":0.0,"id":"","nome":"André Mendes Unipessoal, Lda","zona":"Ferreira do Alentejo","slogan":"Vamos trabalhar Juntos?","tpparc":"C","rank":60.0,"numtec":1.0,"numcli":19.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1347","imglogo":"/Portal/File/IflImage/TEIxMDA4MzE1NzkwOCwzMzIwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20231017152635","nps":0.0,"nps1":2.0,"distritos":["Beja","Évora"],"setores":["Comércio por grosso e a retalho","Gabinetes de contabilidade","Tecnologia"]},{"calculated_nps":0.0,"id":"","nome":"TNMC - Soluções de Informática, Lda.","zona":"Sintra","slogan":"The future is here","tpparc":"E","rank":50.0,"numtec":10.0,"numcli":97.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx993","imglogo":"/Portal/File/IflImage/TUMwMTA1MzE2MTkxNC4zMjQwMjA1MzI%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230323115154","nps":33.0,"nps1":9.0,"distritos":["Faro","Lisboa"],"setores":["Atividades financeiras e de seguros","Atividades imobiliárias","Comércio por grosso e a retalho","Construção","Consultoria","Eletricidade, gás e água","Gabinetes de contabilidade","Indústrias transformadoras","Tecnologia","Transporte e armazenagem"]},{"calculated_nps":0.0,"id":"","nome":"Inforpacto  II - Informática e Serviços, Lda","zona":"Marco de Canaveses","slogan":"Ajudámos a sua empresa a crescer.","tpparc":"A","rank":112.0,"numtec":3.0,"numcli":76.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100948","imglogo":"/Portal/File/IflImage/TUMxMDAxMDczODM4NCw4NjUwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230228145656","nps":0.0,"nps1":4.0,"distritos":["Porto","Braga"],"setores":["Agricultura, produção animal, caça, silvicultura e pesca","Alojamento, restauração e similares","Atividades de saúde humana e apoio social","Atividades financeiras e de seguros","Atividades imobiliárias","Comércio por grosso e a retalho","Construção","Consultoria","Educação","Eletricidade, gás e água","Gabinetes de contabilidade","Indústrias extrativas","Indústrias transformadoras","Tecnologia","Transporte e armazenagem"]},{"calculated_nps":62.0,"id":"","nome":"Gestisoft, Lda.","zona":"Odivelas","slogan":"A solução para o seu negócio!","tpparc":"E","rank":40.0,"numtec":13.0,"numcli":177.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1344","imglogo":"/Portal/File/IflImage/TUZCMTAwNzI5NTM4NzcsNzczMDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230605091210","nps":62.0,"nps1":16.0,"distritos":["Lisboa"],"setores":["Alojamento, restauração e similares","Gabinetes de contabilidade","Construção","Atividades financeiras e de seguros","Consultoria","Transporte e armazenagem","Indústrias transformadoras","Tecnologia","Educação","Comércio por grosso e a retalho","Atividades de saúde humana e apoio social","Indústrias extrativas","Atividades imobiliárias"]},{"calculated_nps":0.0,"id":"","nome":"Activelink - Consultoria e Tec. de Inform. Lda","zona":"Felgueiras","slogan":"Controle o negócio e acelere os seus resultados","tpparc":"A","rank":123.0,"numtec":3.0,"numcli":71.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1277","imglogo":"/Portal/File/IflImage/TVQxMDAxMjI1NjUyMi4xNDIwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230919105618","nps":0.0,"nps1":4.0,"distritos":["Porto","Braga"],"setores":["Atividades financeiras e de seguros","Construção","Alojamento, restauração e similares","Atividades imobiliárias","Comércio por grosso e a retalho","Indústrias transformadoras","Gabinetes de contabilidade","Tecnologia","Consultoria","Transporte e armazenagem"]},{"calculated_nps":0.0,"id":"","nome":"Firmaware - Informática e Assessoria, lda.","zona":"Porto","slogan":"WE MAKE IT SIMPLE FOR YOU","tpparc":"E","rank":54.0,"numtec":6.0,"numcli":47.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1379","imglogo":"/Portal/File/IflImage/TVQxMDEwMjY0MjA0Ny42MzEwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230526114812","nps":0.0,"nps1":4.0,"distritos":["Porto"],"setores":["Atividades de saúde humana e apoio social","Agricultura, produção animal, caça, silvicultura e pesca","Comércio por grosso e a retalho","Gabinetes de contabilidade","Indústrias extrativas","Indústrias transformadoras","Tecnologia"]},{"calculated_nps":0.0,"id":"","nome":"Simbea Digital Business, Unipessoal Lda.","zona":"Pedrouços","slogan":"Oferecemos soluções integradas de Software para a Gestão da sua Empresa","tpparc":"E","rank":107.0,"numtec":7.0,"numcli":26.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1405","imglogo":"/Portal/File/IflImage/TVQxMTAxMjU2NTEyNy40NjkwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230724152848","nps":0.0,"nps1":2.0,"distritos":["Porto","Madeira","Lisboa","Leiria","Viana do Castelo","Bragança","Coimbra","Aveiro","Braga","Vila Real"],"setores":["Atividades financeiras e de seguros","Consultoria","Educação","Indústrias extrativas","Indústrias transformadoras","Gabinetes de contabilidade","Tecnologia","Transporte e armazenagem","Agricultura, produção animal, caça, silvicultura e pesca","Comércio por grosso e a retalho","Construção","Eletricidade, gás e água"]},{"calculated_nps":0.0,"id":"","nome":"Sigma Code - Consultoria e Serviços de Inf. Lda","zona":"Arcozelo","slogan":"UMA EQUIPA DE ESPECIALISTAS AO SERVIÇO DO SEU NEGÓCIO","tpparc":"E","rank":72.0,"numtec":10.0,"numcli":125.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1466","imglogo":"/Portal/File/IflImage/TVQxMTA1MjU1NTYxMC40NjYwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20240229143452","nps":33.0,"nps1":6.0,"distritos":["Viseu","Porto"],"setores":["Indústrias transformadoras","Construção","Consultoria","Comércio por grosso e a retalho","Tecnologia"]},{"calculated_nps":0.0,"id":"","nome":"Domoweb, Lda","zona":"Calendário","slogan":"O seu aliado para o ajudar nas soluções de PHC","tpparc":"A","rank":121.0,"numtec":2.0,"numcli":56.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1511","imglogo":"/Portal/File/IflImage/TVQxMTExMTczNjgyOC4zMjIwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230919104609","nps":0.0,"nps1":1.0,"distritos":["Porto","Braga"],"setores":["Alojamento, restauração e similares","Agricultura, produção animal, caça, silvicultura e pesca","Tecnologia","Indústrias extrativas","Comércio por grosso e a retalho","Indústrias transformadoras","Construção","Atividades imobiliárias","Consultoria","Gabinetes de contabilidade"]},{"calculated_nps":0.0,"id":"","nome":"Discurso Virtual, Unipessoal Lda","zona":"Refojos","slogan":"Discurso Virtual uma empresa que não vos vai deixar ficar mal.","tpparc":"A","rank":145.0,"numtec":3.0,"numcli":26.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1557","imglogo":"/Portal/File/IflImage/TVQxMjAzMjc1ODU1OS4yNTUwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230825171913","nps":0.0,"nps1":3.0,"distritos":["Porto","Vila Real","Braga"],"setores":["Eletricidade, gás e água","Construção","Alojamento, restauração e similares","Indústrias extrativas","Tecnologia","Atividades financeiras e de seguros","Comércio por grosso e a retalho","Consultoria","Agricultura, produção animal, caça, silvicultura e pesca","Atividades imobiliárias","Transporte e armazenagem","Atividades de saúde humana e apoio social","Indústrias transformadoras","Educação","Gabinetes de contabilidade"]},{"calculated_nps":0.0,"id":"","nome":"Metis Unipessoal, Lda","zona":"Valongo","slogan":"Informática descomplicada para as pequenas empresas!","tpparc":"C","rank":137.0,"numtec":1.0,"numcli":8.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1609","imglogo":"/Portal/File/IflImage/TVQxMjEwMTAzNjExOC42MzQwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20221219230510","nps":0.0,"nps1":1.0,"distritos":"","setores":""},{"calculated_nps":0.0,"id":"","nome":"Refresh Bubbles, Serviços de Informática, Lda","zona":"Porto","slogan":"Criamos Soluções!","tpparc":"A","rank":122.0,"numtec":5.0,"numcli":99.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1698","imglogo":"/Portal/File/IflImage/TVQxMzExMjU2NDU2NiwzNjEwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230919104704","nps":0.0,"nps1":8.0,"distritos":["Braga","Porto","Aveiro"],"setores":""},{"calculated_nps":0.0,"id":"","nome":"Imbatível Enigma - Informática Unipessoal, Lda.","zona":"Areias","slogan":"PHC o Software que vai consigo para todo lado","tpparc":"A","rank":81.0,"numtec":3.0,"numcli":33.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1741","imglogo":"/Portal/File/IflImage/TVQxNDA1MTY0MDI1NCw4NTcwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20220812171118","nps":0.0,"nps1":1.0,"distritos":["Porto","Braga"],"setores":["Atividades financeiras e de seguros","Indústrias transformadoras","Comércio por grosso e a retalho","Construção","Consultoria","Gabinetes de contabilidade","Indústrias extrativas","Tecnologia","Transporte e armazenagem","Eletricidade, gás e água"]},{"calculated_nps":20.0,"id":"","nome":"Enjoy Evolution Lda","zona":"Termas de S.Vicente","slogan":"Soluções completas e adaptáveis às dimensões e necessidades específicas de cada negócio.","tpparc":"A","rank":94.0,"numtec":4.0,"numcli":154.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1767","imglogo":"/Portal/File/IflImage/TVQxNDEwMjc1MzU3OCw2MTEwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230919104626","nps":20.0,"nps1":10.0,"distritos":["Braga","Porto"],"setores":["Indústrias transformadoras","Eletricidade, gás e água","Alojamento, restauração e similares","Atividades imobiliárias","Consultoria","Indústrias extrativas","Construção","Agricultura, produção animal, caça, silvicultura e pesca","Comércio por grosso e a retalho","Transporte e armazenagem","Tecnologia","Atividades de saúde humana e apoio social","Atividades financeiras e de seguros","Gabinetes de contabilidade","Educação"]},{"calculated_nps":0.0,"id":"","nome":"CD2S - Consultoria e Informática, Lda","zona":"Albergaria-a-Velha","slogan":"Tire o máximo partido do seu software PHC","tpparc":"E","rank":75.0,"numtec":8.0,"numcli":145.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1871","imglogo":"/Portal/File/IflImage/TVQxNTA3MTAzNTY5NSwxMjEwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230504155501","nps":50.0,"nps1":14.0,"distritos":["Porto","Setúbal","Leiria","Aveiro"],"setores":["Agricultura, produção animal, caça, silvicultura e pesca","Consultoria","Transporte e armazenagem","Indústrias transformadoras","Indústrias extrativas","Gabinetes de contabilidade","Tecnologia","Atividades imobiliárias","Comércio por grosso e a retalho"]},{"calculated_nps":0.0,"id":"","nome":"Assisoft - Assistência e Equipamentos Informáticos Lda","zona":"Ermesinde","slogan":"Não se adpate ao software, nós costumizamos a solução á sua medida.","tpparc":"E","rank":55.0,"numtec":2.0,"numcli":56.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100753","imglogo":"/Portal/File/IflImage/UEEwMjA2MTQzNjQ3NC4zNTQwMjY1MDM%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230919105344","nps":0.0,"nps1":2.0,"distritos":"","setores":""},{"calculated_nps":100.0,"id":"","nome":"m2a- management & accounting Lda","zona":"Vila Verde","slogan":"derrubar barreiras, construir soluções","tpparc":"E","rank":34.0,"numtec":6.0,"numcli":130.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100867","imglogo":"/Portal/File/IflImage/UEEwNDAzMDMzNzUzNC44MDMwMzI4ODI%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230802082712","nps":100.0,"nps1":17.0,"distritos":["Porto","Braga","Viana do Castelo"],"setores":["Agricultura, produção animal, caça, silvicultura e pesca","Atividades de saúde humana e apoio social","Comércio por grosso e a retalho","Construção","Consultoria","Gabinetes de contabilidade","Indústrias transformadoras","Transporte e armazenagem","Tecnologia"]},{"calculated_nps":0.0,"id":"","nome":"Taimatica - Sistemas e Serviços Informaticos, Lda","zona":"Sande São Martinho","slogan":"","tpparc":"A","rank":102.0,"numtec":6.0,"numcli":128.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100890","imglogo":"/Portal/File/IflImage/UEEwNDA1MTQzNDE2OCw4MzAwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20220812145744","nps":50.0,"nps1":6.0,"distritos":["Beja"],"setores":["Construção","Educação","Comércio por grosso e a retalho","Indústrias extrativas","Gabinetes de contabilidade","Agricultura, produção animal, caça, silvicultura e pesca","Atividades imobiliárias","Consultoria","Eletricidade, gás e água","Transporte e armazenagem","Tecnologia","Indústrias transformadoras"]},{"calculated_nps":0.0,"id":"","nome":"Topdata - Sistemas de Informação, Lda.","zona":"Vale Sepal","slogan":"\"Juntos transformamos sonhos em realidade e desafios em oportunidades.\"","tpparc":"E","rank":68.0,"numtec":4.0,"numcli":229.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100896","imglogo":"/Portal/File/IflImage/UEEwNDA4MTk1MTkzOCwwNTIwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230316230809","nps":50.0,"nps1":10.0,"distritos":["Leiria","Lisboa","Coimbra"],"setores":["Transporte e armazenagem","Indústrias extrativas","Comércio por grosso e a retalho","Consultoria","Construção","Indústrias transformadoras","Atividades imobiliárias","Alojamento, restauração e similares"]},{"calculated_nps":0.0,"id":"","nome":"Nortecla - Pinho & Loureiro, Lda","zona":"SÃO ROMÃO DO CORONADO","slogan":"Ao seu lado em qualquer lugar!","tpparc":"A","rank":182.0,"numtec":1.0,"numcli":21.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100905","imglogo":"/Portal/File/IflImage/UEEwNDA5MTUzMDQ1OSw0NzYwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20240603094122","nps":0.0,"nps1":1.0,"distritos":["Aveiro","Beja","Braga","Bragança","Castelo Branco","Coimbra","Évora","Faro","Guarda","Leiria","Lisboa","Portalegre","Viseu","Porto","Santarém","Setúbal","Viana do Castelo","Vila Real"],"setores":""},{"calculated_nps":0.0,"id":"","nome":"NOVOSCANAIS-Consultoria e Programação Informática, LDA","zona":"Porto","slogan":"Desenvolvemos ferramentas que simplificam as tarefas do dia-a-dia","tpparc":"A","rank":63.0,"numtec":7.0,"numcli":103.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100891","imglogo":"/Portal/File/IflImage/UEEwNDA5MTUzMTI0NywzMjkwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230919104519","nps":40.0,"nps1":5.0,"distritos":["Coimbra","Porto","Braga","Aveiro"],"setores":["Atividades de saúde humana e apoio social","Atividades financeiras e de seguros","Comércio por grosso e a retalho","Construção","Consultoria","Educação","Eletricidade, gás e água","Gabinetes de contabilidade","Indústrias transformadoras","Tecnologia","Transporte e armazenagem","Alojamento, restauração e similares"]},{"calculated_nps":0.0,"id":"","nome":"Wave Solutions - Sistemas de Informação, Lda","zona":"Barcelos","slogan":"Garantimos a eficácia de uma solução adaptada ao seu negócio.","tpparc":"E","rank":42.0,"numtec":5.0,"numcli":131.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100881","imglogo":"/Portal/File/IflImage/UEEwNDEwMTQ0MjE5MSw0MTgwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20221128164238","nps":83.0,"nps1":6.0,"distritos":["Porto","Viana do Castelo","Braga"],"setores":["Agricultura, produção animal, caça, silvicultura e pesca","Atividades de saúde humana e apoio social","Atividades financeiras e de seguros","Atividades imobiliárias","Comércio por grosso e a retalho","Construção","Consultoria","Eletricidade, gás e água","Indústrias extrativas","Indústrias transformadoras","Tecnologia","Transporte e armazenagem"]},{"calculated_nps":0.0,"id":"","nome":"Phormiga - Assistência Informática Unipessoal, Lda.","zona":"Castelo Branco","slogan":"Juntos na Transição Digital. Rumo à Melhoria Contínua. Desafie-nos!","tpparc":"A","rank":43.0,"numtec":2.0,"numcli":38.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100962","imglogo":"/Portal/File/IflImage/UEEwNjAxMjU3MjIzNCwwNDAwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230515115033","nps":0.0,"nps1":1.0,"distritos":["Castelo Branco","Guarda","Leiria","Lisboa"],"setores":["Agricultura, produção animal, caça, silvicultura e pesca","Atividades financeiras e de seguros","Atividades imobiliárias","Comércio por grosso e a retalho","Construção","Consultoria","Gabinetes de contabilidade","Indústrias extrativas","Indústrias transformadoras","Tecnologia","Transporte e armazenagem"]},{"calculated_nps":0.0,"id":"","nome":"H.C. Araújo - Soluções Tecnológicas","zona":"Vizela","slogan":"Vamos desafiar o futuro?","tpparc":"E","rank":57.0,"numtec":9.0,"numcli":250.0,"prime":true,"url":"../programs/ewpview.aspx?codigo=dirpcsx200104","imglogo":"/Portal/File/IflImage/UEEwNzAxMjk1NzEwOSw3MDgwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230511110427","nps":50.0,"nps1":12.0,"distritos":["Braga","Vila Real","Viana do Castelo","Bragança","Coimbra","Porto"],"setores":["Atividades financeiras e de seguros","Comércio por grosso e a retalho","Construção","Eletricidade, gás e água","Gabinetes de contabilidade","Indústrias extrativas","Indústrias transformadoras","Tecnologia","Transporte e armazenagem","Alojamento, restauração e similares","Atividades imobiliárias"]},{"calculated_nps":18.0,"id":"","nome":"Wsis - Informática","zona":"Mangualde - Viseu","slogan":"Parceiro PHC Advanced, onde o conhecimento, experiência (20 anos) e dedicação ao cliente são o sucesso para o negócio de cada cliente. Soluções de software para a gestão de toda a empresa.","tpparc":"A","rank":84.0,"numtec":7.0,"numcli":104.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx200121","imglogo":"/Portal/File/IflImage/UEEwNzA0MTgzMzg4NiwwNDEwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230202162431","nps":18.0,"nps1":11.0,"distritos":["Guarda","Viseu"],"setores":["Tecnologia","Indústrias extrativas","Comércio por grosso e a retalho","Atividades de saúde humana e apoio social","Atividades financeiras e de seguros","Transporte e armazenagem","Indústrias transformadoras","Construção","Atividades imobiliárias","Consultoria","Gabinetes de contabilidade"]},{"calculated_nps":0.0,"id":"","nome":"NSOFT - Solução e Integração de Sistemas, Lda","zona":"S. Vicente - Braga","slogan":"Cada projeto é um desafio para o qual pretendemos encontrar, em conjunto com os nossos clientes, as soluções.","tpparc":"E","rank":47.0,"numtec":5.0,"numcli":68.0,"prime":true,"url":"../programs/ewpview.aspx?codigo=dirpcsx200147","imglogo":"/Portal/File/IflImage/UEEwNzA4MDkzNDA3OCw3MDQwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230327090731","nps":0.0,"nps1":3.0,"distritos":["Vila Real","Porto","Aveiro","Viana do Castelo","Braga","Bragança"],"setores":["Indústrias transformadoras","Agricultura, produção animal, caça, silvicultura e pesca","Indústrias extrativas","Educação","Construção","Comércio por grosso e a retalho","Atividades imobiliárias","Atividades financeiras e de seguros","Atividades de saúde humana e apoio social","Eletricidade, gás e água","Consultoria","Tecnologia","Transporte e armazenagem"]},{"calculated_nps":0.0,"id":"","nome":"Martinform, Lda.","zona":"Martingança","slogan":"Adaptamos as soluções PHC às necessidades do cliente.","tpparc":"A","rank":113.0,"numtec":5.0,"numcli":56.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx200153","imglogo":"/Portal/File/IflImage/UEEwNzA5MTkzMzk2MywzNTIwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20220819105902","nps":0.0,"nps1":5.0,"distritos":["Leiria"],"setores":["Transporte e armazenagem","Tecnologia","Alojamento, restauração e similares","Comércio por grosso e a retalho","Atividades de saúde humana e apoio social","Indústrias transformadoras","Construção","Consultoria","Gabinetes de contabilidade","Eletricidade, gás e água"]},{"calculated_nps":27.0,"id":"","nome":"Samsys - Consultoria e Soluções Informáticas, Lda","zona":"Ermesinde","slogan":"Samsys, Pessoas Apaixonadas por Gestão.","tpparc":"E","rank":41.0,"numtec":18.0,"numcli":369.0,"prime":true,"url":"../programs/ewpview.aspx?codigo=dirpcsx200200","imglogo":"/Portal/File/IflImage/UEEwODAxMTc2NTEzOCw1OTkwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230919105450","nps":27.0,"nps1":22.0,"distritos":["Porto","Lisboa","Aveiro","Braga","Bragança","Guarda","Vila Real","Viana do Castelo","Viseu","Coimbra"],"setores":["Agricultura, produção animal, caça, silvicultura e pesca","Alojamento, restauração e similares","Atividades de saúde humana e apoio social","Atividades financeiras e de seguros","Atividades imobiliárias","Comércio por grosso e a retalho","Construção","Consultoria","Educação","Eletricidade, gás e água","Gabinetes de contabilidade","Indústrias extrativas","Indústrias transformadoras","Tecnologia","Transporte e armazenagem"]},{"calculated_nps":0.0,"id":"","nome":"Gnotus - Sistemas e Tecnologias de Informação Lda","zona":"Arcozelo - Barcelos","slogan":"A vantagem de ser honesto é que a concorrência é pequena","tpparc":"A","rank":70.0,"numtec":3.0,"numcli":73.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx200253","imglogo":"/Portal/File/IflImage/UEEwODA5MDEzMzk0NCw5NDgwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20240206122116","nps":0.0,"nps1":4.0,"distritos":["Braga"],"setores":["Eletricidade, gás e água","Consultoria","Gabinetes de contabilidade","Atividades financeiras e de seguros","Transporte e armazenagem","Tecnologia","Indústrias extrativas","Comércio por grosso e a retalho","Atividades de saúde humana e apoio social","Indústrias transformadoras","Construção"]},{"calculated_nps":0.0,"id":"","nome":"Arentia, S.A.","zona":"Leiria","slogan":"Tecnologia que simplifica a vida!","tpparc":"E","rank":45.0,"numtec":23.0,"numcli":98.0,"prime":true,"url":"../programs/ewpview.aspx?codigo=dirpcsx200297","imglogo":"/Portal/File/IflImage/UEEwOTAyMDMzMzk3MSwwMDMwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230321113349","nps":0.0,"nps1":4.0,"distritos":["Leiria","Porto","Lisboa"],"setores":["Comércio por grosso e a retalho","Atividades financeiras e de seguros","Transporte e armazenagem","Indústrias extrativas","Indústrias transformadoras","Construção","Gabinetes de contabilidade"]},{"calculated_nps":50.0,"id":"","nome":"Dourocom - Consultoria Informática Unipessoal, Lda","zona":"Lamego","slogan":"Dedicados à máxima satisfação dos nossos clientes.","tpparc":"A","rank":44.0,"numtec":9.0,"numcli":404.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx200337","imglogo":"/Portal/File/IflImage/UEEwOTA2MzA1MTA2OCw1MDYwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230504120731","nps":50.0,"nps1":22.0,"distritos":["Vila Real","Viseu","Bragança"],"setores":["Comércio por grosso e a retalho","Construção","Consultoria","Educação","Eletricidade, gás e água","Gabinetes de contabilidade","Indústrias extrativas","Tecnologia","Transporte e armazenagem","Indústrias transformadoras","Alojamento, restauração e similares","Atividades de saúde humana e apoio social","Atividades financeiras e de seguros","Atividades imobiliárias","Agricultura, produção animal, caça, silvicultura e pesca"]},{"calculated_nps":0.0,"id":"","nome":"INNERJOINSOFT, LDA","zona":"Penafiel","slogan":"InnerjoinSoft, soluções que ajudam as empresas a crescer.","tpparc":"E","rank":36.0,"numtec":11.0,"numcli":155.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx200343","imglogo":"/Portal/File/IflImage/UEEwOTEwMDEgMjMxNywyNDQwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20221118180034","nps":83.0,"nps1":6.0,"distritos":["Madeira","Santarém","Aveiro","Lisboa","Évora","Açores","Viana do Castelo","Vila Real","Coimbra","Viseu","Castelo Branco","Beja","Portalegre","Setúbal","Guarda","Bragança","Faro","Leiria"],"setores":["Educação","Construção","Tecnologia","Eletricidade, gás e água","Comércio por grosso e a retalho","Atividades financeiras e de seguros","Transporte e armazenagem","Consultoria","Indústrias transformadoras"]},{"calculated_nps":62.0,"id":"","nome":"Trimatriz Informática, Lda","zona":"Aveiro","slogan":"Automatizamos os seus processos, aumentamos a sua rentabilidade e crescemos com a sua satisfação!","tpparc":"E","rank":48.0,"numtec":7.0,"numcli":184.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx100538","imglogo":"/Portal/File/IflImage/UE5aMDAwMjE2NDE3MzIuNTkyMDM1MjE2?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230323142426","nps":62.0,"nps1":16.0,"distritos":["Aveiro","Coimbra","Lisboa","Porto"],"setores":["Agricultura, produção animal, caça, silvicultura e pesca","Alojamento, restauração e similares","Atividades de saúde humana e apoio social","Atividades financeiras e de seguros","Comércio por grosso e a retalho","Construção","Consultoria","Educação","Gabinetes de contabilidade","Indústrias extrativas","Indústrias transformadoras","Tecnologia","Transporte e armazenagem"]},{"calculated_nps":0.0,"id":"","nome":"Recentegama - Informática e Sistemas Unipessoal, Lda","zona":"Canedo VFR","slogan":"Fidelizamos o cliente pela competência e não pela dependência.","tpparc":"A","rank":163.0,"numtec":4.0,"numcli":49.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1288","imglogo":"/Portal/File/IflImage/UFNTMTAwMjE5NTYwNTYuNTY2MDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20221218183453","nps":0.0,"nps1":1.0,"distritos":"","setores":""},{"calculated_nps":0.0,"id":"","nome":"Warepro - Tecnologias de Informação e Serviços, Lda","zona":"Glória e Vera Cruz, Aveiro","slogan":"Fornecemos a melhor Solução para Evoluir o seu Negócio.","tpparc":"A","rank":56.0,"numtec":5.0,"numcli":38.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1359","imglogo":"/Portal/File/IflImage/UFNTMTAwOTIwNjIwOTMuNzk1MDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20220831121938","nps":0.0,"nps1":4.0,"distritos":["Aveiro","Madeira"],"setores":["Comércio por grosso e a retalho","Construção","Consultoria","Tecnologia","Indústrias transformadoras","Indústrias extrativas","Gabinetes de contabilidade"]},{"calculated_nps":0.0,"id":"","nome":"Assistência Online Unipessoal, Lda","zona":"Vila Nova de Gaia","slogan":"Soluções empresarias para dinamizar o seu negocio","tpparc":"E","rank":87.0,"numtec":15.0,"numcli":102.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1360","imglogo":"/Portal/File/IflImage/UFNTMTAwOTIyNDAxMTEuMTc1MDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230301171218","nps":33.0,"nps1":6.0,"distritos":["Vila Real","Coimbra","Bragança","Leiria","Porto","Guarda","Aveiro","Lisboa","Setúbal","Viana do Castelo","Braga","Viseu","Beja","Faro","Portalegre","Santarém","Castelo Branco","Évora"],"setores":["Construção","Indústrias extrativas","Tecnologia","Atividades financeiras e de seguros","Transporte e armazenagem","Consultoria","Gabinetes de contabilidade","Comércio por grosso e a retalho","Indústrias transformadoras"]},{"calculated_nps":15.0,"id":"","nome":"Seguinf - Soluções Integradas, Lda","zona":"Águeda","slogan":"Mais do que um bom ERP é importante ter um bom parceiro. A Seguinf é esse parceiro!","tpparc":"E","rank":69.0,"numtec":16.0,"numcli":312.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1719","imglogo":"/Portal/File/IflImage/UFNTMTQwMjE4NjE1ODQuNjE5MDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230612165002","nps":15.0,"nps1":26.0,"distritos":["Viseu","Coimbra","Aveiro","Porto"],"setores":["Indústrias extrativas","Atividades imobiliárias","Atividades financeiras e de seguros","Indústrias transformadoras","Consultoria","Comércio por grosso e a retalho","Construção","Gabinetes de contabilidade","Tecnologia","Transporte e armazenagem"]},{"calculated_nps":0.0,"id":"","nome":"Br&Vr Identificação Informática e Serviços, Lda","zona":"Vila do Conde","slogan":"Conte connosco sempre que precisar","tpparc":"E","rank":134.0,"numtec":5.0,"numcli":59.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx2018","imglogo":"/Portal/File/IflImage/UFNTMTcwMzMxMzkxNjgsMDYzMDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20231120182117","nps":0.0,"nps1":1.0,"distritos":["Porto","Braga","Aveiro"],"setores":["Alojamento, restauração e similares","Consultoria","Educação","Tecnologia","Agricultura, produção animal, caça, silvicultura e pesca","Indústrias transformadoras","Construção","Transporte e armazenagem","Comércio por grosso e a retalho","Atividades de saúde humana e apoio social"]},{"calculated_nps":0.0,"id":"","nome":"Webincode, Lda","zona":"Viana do Castelo","slogan":"O sucesso do seu negócio é a nossa prioridade.","tpparc":"A","rank":132.0,"numtec":6.0,"numcli":45.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx2094","imglogo":"/Portal/File/IflImage/UFNTMTgwMjE2MzY0ODMsNTA0MDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230314223247","nps":-40.0,"nps1":5.0,"distritos":["Coimbra","Aveiro","Porto","Viana do Castelo","Braga"],"setores":["Comércio por grosso e a retalho","Transporte e armazenagem","Atividades imobiliárias","Consultoria","Tecnologia"]},{"calculated_nps":0.0,"id":"","nome":"InnerBiz Software Solutions, Lda","zona":"Rebordosa","slogan":"O seu parceiro PHC para solucionar o impossível.","tpparc":"A","rank":73.0,"numtec":8.0,"numcli":148.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx2145","imglogo":"/Portal/File/IflImage/UFNTMTgwODE2MzU2MjksNzU5MDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230801092531","nps":60.0,"nps1":5.0,"distritos":["Porto","Braga","Aveiro","Viana do Castelo","Vila Real","Lisboa","Santarém","Leiria","Guarda","Coimbra"],"setores":["Agricultura, produção animal, caça, silvicultura e pesca","Atividades imobiliárias","Comércio por grosso e a retalho","Construção","Consultoria","Eletricidade, gás e água","Gabinetes de contabilidade","Indústrias transformadoras","Tecnologia","Transporte e armazenagem"]},{"calculated_nps":0.0,"id":"","nome":"Inforzur - Mat. Escritório Informático e Serviços, Lda","zona":"Edificio IZ","slogan":"Somos o parceiro de excelência, para potenciar a melhor utilização do seu PHC.","tpparc":"A","rank":79.0,"numtec":3.0,"numcli":49.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx136","imglogo":"/Portal/File/IflImage/UklDOTkwNzMxNDU2OTMuNTI5MDAwMTMy?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20220907192421","nps":20.0,"nps1":5.0,"distritos":["Faro","Évora","Beja","Lisboa"],"setores":["Agricultura, produção animal, caça, silvicultura e pesca","Comércio por grosso e a retalho","Consultoria","Gabinetes de contabilidade","Tecnologia"]},{"calculated_nps":0.0,"id":"","nome":"","zona":"Sao Martinho de Sande","slogan":"Para Empresas que pretendem Excelência na Gestão","tpparc":"E","rank":285.0,"numtec":35.0,"numcli":18.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx243","imglogo":"/Portal/File/IflImage/UklDOTkwNzMxNDU2OTUuOTIzMDAwMjM0?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20221110092733","nps":0.0,"nps1":2.0,"distritos":["Viseu"],"setores":["Consultoria"]},{"calculated_nps":0.0,"id":"","nome":"Visão Lógica - Comercialização Art. de Informática, Lda","zona":"Torres Vedras","slogan":"Soluções de Gestão PHC","tpparc":"A","rank":91.0,"numtec":2.0,"numcli":65.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx713","imglogo":"/Portal/File/IflImage/UklDOTkwNzMxNDU3MDYuMTU3MDAwNzAy?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230801121553","nps":62.0,"nps1":8.0,"distritos":["Açores","Aveiro","Beja","Braga","Bragança","Castelo Branco","Coimbra","Évora","Faro","Guarda","Leiria","Lisboa","Madeira","Portalegre","Porto","Santarém","Setúbal","Viana do Castelo","Vila Real","Viseu"],"setores":["Agricultura, produção animal, caça, silvicultura e pesca","Alojamento, restauração e similares","Atividades de saúde humana e apoio social","Atividades financeiras e de seguros","Atividades imobiliárias","Comércio por grosso e a retalho","Construção","Consultoria","Educação","Eletricidade, gás e água","Gabinetes de contabilidade","Indústrias extrativas","Indústrias transformadoras","Tecnologia","Transporte e armazenagem"]},{"calculated_nps":0.0,"id":"","nome":"Telgal - Telecomunic. e Sist. Informação, Lda.","zona":"Sines","slogan":"Fazemos parte da solução","tpparc":"A","rank":97.0,"numtec":3.0,"numcli":115.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx724","imglogo":"/Portal/File/IflImage/UklDOTkwNzMxNDU3MDYuMzg4MDAwNzEz?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230725112120","nps":50.0,"nps1":8.0,"distritos":"","setores":["Agricultura, produção animal, caça, silvicultura e pesca","Comércio por grosso e a retalho","Construção","Consultoria","Gabinetes de contabilidade","Indústrias transformadoras","Tecnologia","Transporte e armazenagem","Atividades de saúde humana e apoio social","Atividades imobiliárias"]},{"calculated_nps":0.0,"id":"","nome":"Atlas Informática Unip. Lda.","zona":"Lisboa","slogan":"Parceria Funcional","tpparc":"A","rank":93.0,"numtec":4.0,"numcli":41.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx741","imglogo":"/Portal/File/IflImage/UklDOTkwNzMxNDU3MDYuNjM4MDAwNzI1?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20240208134959","nps":0.0,"nps1":2.0,"distritos":["Lisboa"],"setores":["Alojamento, restauração e similares","Atividades de saúde humana e apoio social","Atividades imobiliárias","Comércio por grosso e a retalho","Consultoria","Educação","Gabinetes de contabilidade","Tecnologia"]},{"calculated_nps":0.0,"id":"","nome":"Arca Informática, Lda.","zona":"Rio de Mouro","slogan":"Ajudamos os nossos clientes a potenciar os recursos das suas empresas.","tpparc":"A","rank":147.0,"numtec":2.0,"numcli":18.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx747","imglogo":"/Portal/File/IflImage/UklDOTkwNzMxNDU3MDYuNzk4MDAwNzMx?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20231124163638","nps":0.0,"nps1":3.0,"distritos":["Lisboa"],"setores":["Tecnologia","Alojamento, restauração e similares","Comércio por grosso e a retalho","Gabinetes de contabilidade","Consultoria","Transporte e armazenagem","Atividades imobiliárias"]},{"calculated_nps":0.0,"id":"","nome":"OCR - Technology and Productivity","zona":"Lisboa","slogan":"Delivering value to customers","tpparc":"E","rank":51.0,"numtec":9.0,"numcli":138.0,"prime":true,"url":"../programs/ewpview.aspx?codigo=dirpcsx918","imglogo":"/Portal/File/IflImage/UklDOTkwNzMxNDU3MTAuNjQ0MDAwOTA4?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230919104532","nps":27.0,"nps1":11.0,"distritos":["Lisboa","Setúbal","Faro"],"setores":["Atividades imobiliárias","Indústrias extrativas","Atividades financeiras e de seguros","Atividades de saúde humana e apoio social","Tecnologia","Indústrias transformadoras","Construção","Educação","Consultoria","Comércio por grosso e a retalho","Gabinetes de contabilidade","Transporte e armazenagem"]},{"calculated_nps":0.0,"id":"","nome":"SIGESCOM - Soluções Integradas Informática e Gestão","zona":"Lisboa","slogan":"Parceiro PHC há mais de 25 anos","tpparc":"C","rank":120.0,"numtec":2.0,"numcli":17.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1116","imglogo":"/Portal/File/IflImage/Uk1BMDUwNDE1MzUyODYsNzk1MDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230324100029","nps":0.0,"nps1":1.0,"distritos":["Lisboa"],"setores":["Alojamento, restauração e similares","Atividades financeiras e de seguros","Comércio por grosso e a retalho","Construção","Consultoria","Gabinetes de contabilidade","Indústrias extrativas","Indústrias transformadoras","Tecnologia","Transporte e armazenagem"]},{"calculated_nps":0.0,"id":"","nome":"Trigenius - Sistemas Informáticos, S.A.","zona":"Fátima","slogan":"Transformamos o seu negócio!","tpparc":"E","rank":37.0,"numtec":17.0,"numcli":135.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1221","imglogo":"/Portal/File/IflImage/Uk1BMDgwOTAzMzUwNDcsMDkwMDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230720153523","nps":45.0,"nps1":11.0,"distritos":["Lisboa","Leiria","Setúbal","Santarém","Coimbra"],"setores":["Comércio por grosso e a retalho","Indústrias extrativas","Atividades imobiliárias","Tecnologia","Transporte e armazenagem","Atividades de saúde humana e apoio social","Eletricidade, gás e água","Consultoria","Construção","Indústrias transformadoras","Agricultura, produção animal, caça, silvicultura e pesca","Educação","Atividades financeiras e de seguros","Gabinetes de contabilidade"]},{"calculated_nps":32.0,"id":"","nome":"Winsig - Soluções de Gestão, SA.","zona":"Linda-a-Velha","slogan":"Driven by Inovation, Focused on Results","tpparc":"E","rank":28.0,"numtec":97.0,"numcli":772.0,"prime":true,"url":"../programs/ewpview.aspx?codigo=dirpcsx1224","imglogo":"/Portal/File/IflImage/Uk1BMDgxMDA4NDQ5MzgsMDk2MDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230919104033","nps":32.0,"nps1":76.0,"distritos":["Lisboa","Açores","Aveiro","Leiria","Madeira","Porto","Viseu"],"setores":["Atividades financeiras e de seguros","Atividades imobiliárias","Comércio por grosso e a retalho","Construção","Consultoria","Educação","Gabinetes de contabilidade","Indústrias extrativas","Indústrias transformadoras","Tecnologia","Transporte e armazenagem","Atividades de saúde humana e apoio social","Eletricidade, gás e água"]},{"calculated_nps":0.0,"id":"","nome":"Firstboot, Lda.","zona":"Amadora","slogan":"Faça a gestão da sua empresa com o nosso software PHC CS. Temos a solução para o seu negócio.","tpparc":"A","rank":125.0,"numtec":2.0,"numcli":5.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1239","imglogo":"/Portal/File/IflImage/Uk1BMDkwMjI1NDA2NTQsNDE0MDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230324180130","nps":0.0,"nps1":2.0,"distritos":["Évora","Leiria","Lisboa","Santarém","Viseu","Porto","Vila Real","Coimbra","Setúbal"],"setores":""},{"calculated_nps":21.0,"id":"","nome":"ANTURIO Business Software","zona":"Lisboa","slogan":"1º Parceiro PHC Web e 2º maior parceiro PHC","tpparc":"E","rank":29.0,"numtec":44.0,"numcli":377.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1264","imglogo":"/Portal/File/IflImage/Uk1BMDkwOTI4NDExODcsODU5MDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230919104554","nps":21.0,"nps1":28.0,"distritos":["Viseu","Portalegre","Évora","Santarém","Coimbra","Leiria","Vila Real","Porto","Lisboa","Braga","Aveiro","Guarda","Setúbal","Viana do Castelo","Açores","Faro","Madeira","Beja","Bragança","Castelo Branco"],"setores":["Construção","Agricultura, produção animal, caça, silvicultura e pesca","Alojamento, restauração e similares","Atividades de saúde humana e apoio social","Atividades financeiras e de seguros","Atividades imobiliárias","Comércio por grosso e a retalho","Consultoria","Educação","Eletricidade, gás e água","Gabinetes de contabilidade","Indústrias extrativas","Indústrias transformadoras","Tecnologia","Transporte e armazenagem"]},{"calculated_nps":0.0,"id":"","nome":"Sérgio Mendes - Consultoria Informática Profissional","zona":"Colares","slogan":"Connosco além do suporte à solução PHC beneficiará da experiencia e boas práticas no uso do software acumuladas durante mais de 20 naos. Parcerias ganhadoras dão parcerias duradoras","tpparc":"A","rank":39.0,"numtec":3.0,"numcli":24.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1417","imglogo":"/Portal/File/IflImage/Uk1BMTEwMjE2NjA0ODQsNzI3MDAwMC0x?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230323163123","nps":0.0,"nps1":2.0,"distritos":"","setores":""},{"calculated_nps":12.0,"id":"","nome":"Quantinfor - Consultoria Informática, Lda.","zona":"Malveira","slogan":"A velocidade do mundo empresarial obriga a que os gestores invistam na modernização das suas ferramentas de trabalho. Na Quantinfor encontra as soluções que precisa para levar a sua empresa mais longe","tpparc":"E","rank":31.0,"numtec":30.0,"numcli":326.0,"prime":true,"url":"../programs/ewpview.aspx?codigo=dirpcsx981","imglogo":"/Portal/File/IflImage/U01NMDAxMTE1NDAzNDAuMzIzMDQ0OTQ5?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230919104501","nps":12.0,"nps1":26.0,"distritos":["Portalegre","Leiria","Aveiro","Setúbal","Açores","Coimbra","Santarém","Porto","Lisboa"],"setores":["Eletricidade, gás e água","Educação","Tecnologia","Indústrias transformadoras","Atividades financeiras e de seguros","Transporte e armazenagem","Gabinetes de contabilidade","Comércio por grosso e a retalho","Construção","Indústrias extrativas","Atividades imobiliárias","Consultoria","Agricultura, produção animal, caça, silvicultura e pesca","Atividades de saúde humana e apoio social"]},{"calculated_nps":0.0,"id":"","nome":"Active4 - Consult. Inform., Equ. e Formação, Unip. Lda.","zona":"Alcabideche","slogan":"Active 4 Your Business","tpparc":"A","rank":49.0,"numtec":4.0,"numcli":42.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1101","imglogo":"/Portal/File/IflImage/U1MwNDA5Mjg2NTE0NiwzMTUwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230505124323","nps":75.0,"nps1":8.0,"distritos":["Lisboa","Faro"],"setores":["Alojamento, restauração e similares","Consultoria","Gabinetes de contabilidade","Tecnologia"]},{"calculated_nps":0.0,"id":"","nome":"Soladvance - Sistemas Informáticos, Lda.","zona":"Santarém","slogan":"Levamos a sua empresa mais longe","tpparc":"A","rank":114.0,"numtec":4.0,"numcli":39.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx1139","imglogo":"/Portal/File/IflImage/U1MwNjAxMDU1OTMxMSwyODAwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230712115329","nps":0.0,"nps1":1.0,"distritos":["Santarém"],"setores":["Agricultura, produção animal, caça, silvicultura e pesca","Atividades imobiliárias","Comércio por grosso e a retalho","Construção","Consultoria","Eletricidade, gás e água","Gabinetes de contabilidade","Indústrias extrativas","Indústrias transformadoras","Tecnologia","Transporte e armazenagem"]},{"calculated_nps":0.0,"id":"","nome":"QUEST4ALPHA, LDA","zona":"Infantado - Loures","slogan":"Implementamos o software á medida do seu negócio","tpparc":"E","rank":129.0,"numtec":6.0,"numcli":52.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx2092","imglogo":"/Portal/File/IflImage/U1MxODAyMTI0MDE3NCwxNTkwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230821113759","nps":0.0,"nps1":2.0,"distritos":["Lisboa"],"setores":["Atividades financeiras e de seguros","Comércio por grosso e a retalho","Construção","Consultoria","Gabinetes de contabilidade","Indústrias transformadoras","Tecnologia","Transporte e armazenagem","Agricultura, produção animal, caça, silvicultura e pesca","Atividades de saúde humana e apoio social","Atividades imobiliárias"]},{"calculated_nps":39.0,"id":"","nome":"Totalsoft - Consultoria em Informática de Gestão, Lda.","zona":"Odivelas","slogan":"O nosso negócio é fazer crescer o seu.","tpparc":"E","rank":46.0,"numtec":17.0,"numcli":176.0,"prime":true,"url":"../programs/ewpview.aspx?codigo=dirpcsx1558","imglogo":"/Portal/File/IflImage/VE0xMjAzMjk0MTM0MS4yMDMwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20240513121108","nps":39.0,"nps1":18.0,"distritos":["Lisboa","Santarém","Setúbal"],"setores":["Comércio por grosso e a retalho","Construção","Consultoria","Gabinetes de contabilidade","Alojamento, restauração e similares"]},{"calculated_nps":0.0,"id":"","nome":"Goclick Lda","zona":"Funchal","slogan":"Goclcik,  Gestão via inovação! Damos vida ao seu negócio!","tpparc":"A","rank":158.0,"numtec":2.0,"numcli":8.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx2338","imglogo":"/Portal/File/IflImage/RUwyMzAxMTA1NjcyMyw3OTMwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20230919105356","nps":0.0,"nps1":1.0,"distritos":["Madeira","Lisboa"],"setores":""},{"calculated_nps":0.0,"id":"","nome":"SERVITOUCH - Grupo AUDITOR","zona":"Zona Industrial Baguim do Monte","slogan":"Somos Diferentes - Somos AUDITOR","tpparc":"A","rank":127.0,"numtec":2.0,"numcli":78.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx2370","imglogo":"/Portal/File/IflImage/RUwyMzEwMTE1MjIxOCw2OTUwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20240515144448","nps":0.0,"nps1":1.0,"distritos":"","setores":""},{"calculated_nps":0.0,"id":"","nome":"Megavale - Informatica Lda","zona":"Paredes - Porto","slogan":"We move your business","tpparc":"E","rank":152.0,"numtec":4.0,"numcli":10.0,"prime":false,"url":"../programs/ewpview.aspx?codigo=dirpcsx2367","imglogo":"/Portal/File/IflImage/RUwyMzA5MTg1NTUwNywxODEwMDAwLTE%3d?table=CL&uniqueId=imagem&maxHeight=200&maxWidth=200&v=20240412123644","nps":0.0,"nps1":1.0,"distritos":["Porto"],"setores":["Transporte e armazenagem","Tecnologia","Alojamento, restauração e similares","Educação","Comércio por grosso e a retalho","Indústrias transformadoras","Construção","Consultoria","Gabinetes de contabilidade","Atividades de saúde humana e apoio social","Atividades imobiliárias"]}]; /*PARC*/
+            for (var j = 0; j < data.length; j++) {
+                self.all.push(
+                    new self.oMaker(
+                        data[j].nome,
+                        data[j].tpparc,
+                        data[j].zona,
+                        data[j].rank,
+                        data[j].numtec,
+                        data[j].numcli,
+                        data[j].imglogo,
+                        data[j].url,
+                        data[j].slogan,
+                        data[j].distritos,
+                        data[j].setores,
+                        data[j].prime
+                    )
+                );
+            }
+        };
+
+        this.loadData();
+    };
+    $(function () {
+        /* var styleSheets = document.getElementsByTagName("link");
+    
+            for (var i = 0; i < styleSheets.length; i++) {
+                var styleSheet = styleSheets[i];
+                var href = styleSheet.href;
+                if (href && (href.includes("user.css") || href.includes("PortalPT/css/bootstrap"))) {
+                    styleSheet.disabled = true;
+                }
+            } */
+
+        var styleSheets = document.getElementsByTagName("link");
+
+        for (var i = 0; i < styleSheets.length; i++) {
+            var styleSheet = styleSheets[i];
+            var href = styleSheet.href;
+            if (href && href.includes("cssmk")) {
+                styleSheet.disabled = true;
+            }
+        }
+
+        ko.applyBindings(new Model());
+
+        let container = $("#aspnetForm > div.container");
+        container.after($("#dirResults"));
+        container.after($("#dirOptions"));
+        container.after($("#dirHeading"));
+        container.removeClass("container");
+        $("#ctl00_MasterUpdatePanel1").hide();
+        $("#primary-navigation").remove();
+        $("#site-header-wrapper").remove();
+        /*container.addClass("row");
+            container.addClass("contentBanner");*/
+    });
+</script>
+<style type="text/css">/** {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+          }
+          
+          body {
+              font-family: Arial, Helvetica, sans-serif;
+              display: grid;
+              place-items: center;
+              min-height: 100vh;
+          }*/
+
+    footer {
+        display: none;
+    }
+
+    html {
+        font-size: 16px !important;
+    }
+
+    body {
+        font-size: 16px !important;
+        overflow-x: hidden;
+    }
+
+    select {
+        height: 50px;
+    }
+
+    .dirResults {
+        /* background-color: #EEF5FF !important; */
+        background-color: white !important;
+    }
+
+    .contentBanner {
+        background-color: #fff;
+        display: block;
+    }
+
+    .btn-primary {
+        background-color: #ea0029 !important;
+        border-color: #ea0029 !important;
+    }
+
+    .rounded-pill {
+        border-radius: 18px !important;
+    }
+
+    .btn-outline-primary {
+        background-color: #ea0029 !important;
+        border-color: #ea0029 !important;
+    }
+
+    .form-select {
+        border-radius: 14px !important;
+    }
+
+    .card {
+        margin-top: 2em;
+        color: rgb(0, 0, 0);
+        transition: box-shadow 0.3s;
+        border-radius: 14px !important;
+        box-shadow: 0 0 11px rgba(33, 33, 33, 0.2);
+    }
+
+    .card:hover {
+        box-shadow: 0 0 11px rgba(33, 33, 33, 0.6);
+    }
+
+    .logoimg {
+        max-width: 200px;
+    }
+
+    .bg-pill {
+        background-color: #ffd8dd !important;
+        color: #ea0029 !important;
+    }
+
+    .sideOptions {
+        background-color: #fff;
+        margin-top: 2em;
+    }
+
+    .optionsTitle {
+        font-size: 20px;
+        margin-bottom: 1rem;
+        margin-top: 1rem;
+    }
+
+    .optionsInput {
+        margin-bottom: 1rem;
+    }
+
+    .optionsSort {
+        margin-top: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    hr {
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+        margin-right: 2rem;
+        margin-left: 2rem;
+        border: 0;
+        border-top: 1px solid var(--bs-secondary);
+    }
+
+    .dirOptions {
+        background-color: #fff;
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+
+    .dirHeading {
+        background-color: #fff;
+        padding-top: 2rem;
+    }
+
+    .optionsHR {
+        display: none;
+    }
+
+    .cardBtn {
+        margin-left: 1rem;
+    }
+
+    .cardName {
+        margin-top: 1rem;
+    }
+
+    @media only screen and (max-width: 1373px) {
+        .cardName div h4 {
+            font-size: 16px !important;
+        }
+
+        .cardSlogan {
+            font-size: 12px !important;
+        }
+
+        .cardGeo {
+            margin-top: 0rem;
+            font-size: 12px !important;
+        }
+
+        .cardBtn {
+            font-size: 12px !important;
+        }
+
+        #img-logo {
+            margin-left: 0em;
+        }
+    }
+
+    @media only screen and (max-width: 1216px) {
+        .optionsHR {
+            display: block;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            margin-left: 1rem;
+            border: 0;
+            border-top: 1px solid var(--bs-secondary);
+            width: 92%;
+        }
+
+        .inputOption {
+            margin-bottom: 1rem;
+        }
+
+        .fa-info-circle {
+            display: none;
+        }
+
+        .img-logo {
+            margin-left: 0em;
+        }
+    }
+
+    @media only screen and (max-width: 576px) {
+        .sticky-top {
+            position: unset;
+            top: unset;
+            z-index: unset;
+        }
+
+        .inputOption {
+            margin-bottom: 1rem;
+        }
+
+        .cardSlogan {
+            display: none !important;
+        }
+
+        .cardBtn {
+            margin-left: 2rem;
+        }
+
+        .cardBadges {
+            margin-top: 1rem;
+        }
+
+        .fa-info-circle {
+            display: none;
+        }
+
+        #img-logo {
+            margin-left: 0em;
+        }
+    }
+
+    @media screen and (max-width: 690px) {
+    #img-logo {
+        margin-left: 0em !important; /* Reset margin for mobile */
+        /* Alternatively, adjust margin for mobile */
+        /* margin-left: 10px; */
+    }
+}
+</style>
+<div class="dirHeading" id="dirHeading">
+<div class="row justify-content-center">
+<div class="col col-lg-7 col-md-7 col-sm-7 text-center">
+<h1>Diret&oacute;rio de Parceiros PHC CS</h1>
+
+<p>Desde o primeiro momento, ter&aacute; ao seu lado um Parceiro PHC CS preparado para responder &agrave;s suas necessidades espec&iacute;ficas atrav&eacute;s de solu&ccedil;&otilde;es eficazes e acompanhamento t&eacute;cnico. Conhe&ccedil;a todos os Parceiros preparados para o ajudar.</p>
+</div>
+</div>
+</div>
+
+<div class="dirOptions sticky-top" id="dirOptions">
+<div class="row justify-content-center">
+<div class="col-11 col-lg-10">
+<div class="row">
+<div class="col-12 col-xl-3 inputOption">
+<div class="form-floating fix-floating-label"><select aria-label="Filtrar resultados por região" class="form-select" data-bind="options: availableDist, value: filterRegion, valueUpdate: &quot;input&quot;" id="filterregiao"></select> <label for="floatingSelect">Atendimento presencial:</label></div>
+</div>
+
+<div class="col-12 col-xl-3 inputOption">
+<div class="form-floating fix-floating-label"><select aria-label="Filtrar resultados por tipo de parceria" class="form-select" data-bind="options: availableTP, value: filterTpParc, valueUpdate: &quot;input&quot;" id="filtertpParc"></select> <label for="floatingSelect">Tipo de Parceiro:</label></div>
+</div>
+
+<div class="col-12 col-xl-3 inputOption">
+<div class="form-floating fix-floating-label"><select aria-label="Filtrar resultados por setor" class="form-select" data-bind="options: availableSetr, value: filterSetr, valueUpdate: &quot;input&quot;" id="filterSetr"></select> <label for="floatingSelect">Setor:</label></div>
+</div>
+
+<hr class="optionsHR" />
+<div class="col-12 col-xl-2 inputOptionSort">
+<div class="form-floating fix-floating-label"><select aria-label="Forma de ordenação" class="form-select" data-bind="value: sortMethod, valueUpdate: &quot;input&quot;" id="floatingSelect"><option selected="selected" value="me">Parceiro recomendado</option> <!-- <option value="rg">Regi&atilde;o</option> --><option value="nt">N.&ordm; t&eacute;cnicos</option><option value="nc">N.&ordm; clientes</option> </select> <label for="floatingSelect">Ordenar por:</label></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="dirResults" id="dirResults">
+<div class="row justify-content-center">
+<div class="col-11 col-sm-10 col-md-8 col-xl-7 col-xxl-5">
+<div class="row justify-content-center" data-bind="visible: paginated().length==0" style="margin-top: 5rem">
+<div class="col-8 text-center">
+<h4 class="titles">N&atilde;o encontramos Parceiros dispon&iacute;veis para esta pesquisa.</h4>
+
+<p><span class="text-secondary">Altere os filtros de pesquisa para encontrar o melhor Parceiro para si.</span></p>
+</div>
+</div>
+<!-- ko foreach: paginated --><a data-bind="attr:{href: $data.url}" target="_blank"> </a>
+
+<div class="card">
+<div class="card-body">
+<div class="row">
+<div class="col-5 col-md-4 col-lg-3 align-self-center"><a data-bind="attr:{href: $data.url}" target="_blank"><img class="logoimg" data-bind="visible: $data.imglogo().length &gt; 0, attr:{src: $data.imglogo}" width="100%" /> </a></div>
+
+<div class="col-7 col-md-8 col-xl-9 align-self-center">
+<div class="row">
+<div class="col-12">
+<div class="float-end"><a data-bind="attr:{href: $data.url}" target="_blank"><span class="badge bg-pill text-dark"> T&eacute;cnicos </span> <span class="badge bg-pill text-dark"> Clientes </span> </a></div>
+</div>
+</div>
+
+<div class="row cardName">
+<div class="col-sm-12">
+<h4 data-bind="text: $data.nome"><a data-bind="attr:{href: $data.url}" target="_blank">&nbsp;</a></h4>
+</div>
+</div>
+
+<div class="row cardSlogan">
+<div class="col-sm-12"><a data-bind="attr:{href: $data.url}" target="_blank"> </a></div>
+</div>
+<a data-bind="attr:{href: $data.url}" target="_blank"><!-- <div class="row cardGeo" style="margin-top:1rem;">
+                                      <div class="col-sm-12"><i aria-hidden="true" class="fa fa-map-marker text-secondary"></i> <span class="text-secondary" data-bind="text: $data.zona"></span> </div>
+                                  </div> --> </a></div>
+</div>
+
+<div class="row cardBadges">
+<div class="col-12 d-flex justify-content-between align-items-center">
+<div class="d-flex align-items-center"><a data-bind="attr:{href: $data.url}" target="_blank"> <img data-bind="visible: $root.isPartner(&quot;corporate&quot;, $data);" id="img-logo" src="https://www.phc.pt/enews/phc_cs_logo_corporate.svg" style="display: none;margin-left: 9.9em; /* Adjust as needed */left: 10px; /* Adjust as needed */width: 11em; /* Adjust width to desired size */height: auto;" /> <img data-bind="visible: $root.isPartner(&quot;advanced&quot;, $data);" id="img-logo" src="https://www.phc.pt/enews/phc_cs_logo_advanced.svg" style="display: none;margin-left: 9.9em;bottom: 10px; /* Adjust as needed */left: 10px; /* Adjust as needed */width: 11em; /* Adjust width to desired size */height: auto;" /> <img data-bind="visible: $root.isPartner(&quot;enterprise&quot;, $data);" id="img-logo" src="https://www.phc.pt/enews/phc_cs_logo_enterprise.svg" style="display:none;margin-left: 9.9em;bottom: 10px; /* Adjust as needed */left: 10px; /* Adjust as needed */width: 11em; /* Adjust width to desired size */height: auto;" /> </a></div>
+<a data-bind="attr:{href: $data.url}" target="_blank"> <span class="btn btn-primary cardBtn">Ver perfil</span> </a></div>
+<a data-bind="attr:{href: $data.url}" target="_blank"> </a></div>
+<a data-bind="attr:{href: $data.url}" target="_blank"> </a></div>
+<a data-bind="attr:{href: $data.url}" target="_blank"> </a></div>
+<a data-bind="attr:{href: $data.url}" target="_blank"> </a><a data-bind="attr:{href: $data.url}" target="_blank"> </a> <!-- /ko --></div>
+</div>
+
+<div class="row justify-content-center" style="padding-top: 2rem; padding-bottom: 5rem">
+<div class="col col-lg-6 col-md-6 col-sm-6 text-center"><a class="btn btn-primary btn-lg rounded-pill" data-bind="click: more, visible: hasMore" href="#" id="dirVMore">Ver mais</a> <a class="btn btn-primary btn-lg rounded-pill" data-bind="visible: last" onclick="document.getElementById('dirHeading').scrollIntoView({ behavior: 'smooth' });">Voltar ao topo</a></div>
+</div>
+</div>
